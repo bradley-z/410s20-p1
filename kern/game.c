@@ -57,6 +57,16 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
      * You should delete this comment, and enable them --
      * when you are ready.
      */
+    enable_interrupts();
+
+    clear_console();
+
+    show_cursor();
+
+    set_term_color(FGND_GREEN | BGND_BLACK);
+
+    putbyte('h');
+    putbyte('i');
 
     lprintf( "Hello from a brand new kernel!" );
 
