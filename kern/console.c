@@ -9,7 +9,9 @@
 int console_color = (FGND_GREEN | BGND_BLACK);
 int console_row = 0;
 int console_col = 0;
-char cursor_shown = 1;
+bool cursor_shown = true;
+
+// what do i do about cursor color?
 
 bool in_range(int row, int col)
 {
@@ -90,9 +92,8 @@ get_cursor( int *row, int *col )
 void
 hide_cursor(void)
 {
-    cursor_shown = 0;
+    cursor_shown = false;
 
-    // uint16_t addr = (uint16_t)(CONSOLE_MEM_BASE + 2 * (CONSOLE_HEIGHT * CONSOLE_WIDTH));
     uint16_t addr = (uint16_t)(CONSOLE_HEIGHT * CONSOLE_WIDTH);
     uint8_t top_half = (addr >> 8) & 0xFF;
     uint8_t bottom_half = addr & 0xFF;
@@ -106,22 +107,45 @@ hide_cursor(void)
 void
 show_cursor(void)
 {
-    cursor_shown = 1;
+    cursor_shown = true;
     set_cursor(console_row, console_col);
 }
 
 void
 clear_console(void)
 {
+    // no we want to skip the second byte since that deals with color
+    char *curr = (char*)CONSOLE_MEM_BASE;
+    char *end = (char*)(CONSOLE_MEM_BASE + CONSOLE_HEIGHT * CONSOLE_WIDTH);
+    while (curr < end) {
+        curr[0] = 0;
+        curr += 2;
+    }
+    console_row = 0;
+    console_col = 0;
+    if (cursor_shown) {
+        show_cursor();
+    }
 }
 
+// what do i do about \r or \b or \n and where does cursor go after?
 void
 draw_char( int row, int col, int ch, int color )
 {
+    if (!in_range(row, col)) {
+        return;
+    }
+    if (color > 0x7F) {
+        return;
+    }
+    char *write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (row * CONSOLE_WIDTH + col));
+    write_addr[0] = ch;
+    write_addr[1] = color;
 }
 
 char
 get_char( int row, int col )
 {
-  return 0;
+    char *read_addr = (char*)(CONSOLE_MEM_BASE + 2 * (row * CONSOLE_WIDTH + col));
+    return *read_addr;
 }
