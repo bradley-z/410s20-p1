@@ -43,6 +43,7 @@ putbytes( const char *s, int len )
 int
 set_term_color( int color )
 {
+    // is blink in range?
     if (color > 0x7F) {
         return -1;
     }
@@ -66,10 +67,9 @@ set_cursor( int row, int col )
     console_col = col;
 
     if (cursor_shown) {
-        // uint16_t addr = (uint16_t)(CONSOLE_MEM_BASE + 2 * ((row * CONSOLE_WIDTH) + col));
         uint16_t addr = row * CONSOLE_WIDTH + col;
         uint8_t top_half = (addr >> 8) & 0xFF;
-        uint8_t bottom_half = addr && 0xFF;
+        uint8_t bottom_half = addr & 0xFF;
 
         outb(CRTC_IDX_REG, CRTC_CURSOR_MSB_IDX);
         outb(CRTC_DATA_REG, top_half);
@@ -95,7 +95,7 @@ hide_cursor(void)
     // uint16_t addr = (uint16_t)(CONSOLE_MEM_BASE + 2 * (CONSOLE_HEIGHT * CONSOLE_WIDTH));
     uint16_t addr = (uint16_t)(CONSOLE_HEIGHT * CONSOLE_WIDTH);
     uint8_t top_half = (addr >> 8) & 0xFF;
-    uint8_t bottom_half = addr && 0xFF;
+    uint8_t bottom_half = addr & 0xFF;
 
     outb(CRTC_IDX_REG, CRTC_CURSOR_MSB_IDX);
     outb(CRTC_DATA_REG, top_half);
