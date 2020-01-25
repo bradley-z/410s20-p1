@@ -6,6 +6,8 @@
 
 #include <simics.h>
 
+#define ASCII_SPACE 0x20;
+
 int console_color = (FGND_GREEN | BGND_BLACK);
 int console_row = 0;
 int console_col = 0;
@@ -18,14 +20,71 @@ bool in_range(int row, int col)
     return row >= 0 && row < CONSOLE_HEIGHT && col >= 0 && col < CONSOLE_WIDTH;
 }
 
+void scroll()
+{
+    int i, j;
+    for (i = 0; i < CONSOLE_HEIGHT - 1; i++) {
+        for (j = 0; j < CONSOLE_WIDTH; j++) {
+            char *old_addr = (char*)(CONSOLE_MEM_BASE + 2 * (i * CONSOLE_WIDTH + j));
+            char *new_addr = (char*)(CONSOLE_MEM_BASE + 2 * ((i + 1) * CONSOLE_WIDTH + j));
+            old_addr[0] = new_addr[0];
+            old_addr[1] = new_addr[1];
+        }
+    }
+}
+
 int putbyte( char ch )
 {
-    char *write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
-    write_addr[0] = ch;
-    write_addr[1] = console_color;
-    console_col++;
+    char *write_addr;
+    if (ch == '\r') {
+        console_col = 0;
+    }
+    else if (ch == '\n') {
+        console_col = 0;
+        if (console_row == CONSOLE_WIDTH - 1) {
+            scroll();
+        }
+        else {
+            console_row++;
+        }
+    }
+    else if (ch == '\b') {
+        if (console_col > 0) {
+            console_col--;
+            write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
+            write_addr[0] = ASCII_SPACE;
+            write_addr[1] = console_color;
+        } else {
+            if (console_row == 0) {
+                set_cursor(console_row, console_col);
+                return ch;
+            } else {
+                console_row--;
+                console_col = CONSOLE_WIDTH - 1;
+                write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
+                write_addr[0] = ASCII_SPACE;
+                write_addr[1] = console_color;
+            }
+        }
+    }
+    else {
+        if (console_col < CONSOLE_WIDTH - 1) {
+            write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
+            write_addr[0] = ch;
+            write_addr[1] = console_color;
+            console_col++;
+        }
+        else {
+            console_col = 0;
+            if (console_row == CONSOLE_HEIGHT - 1) {
+                scroll();
+            }
+            write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
+            write_addr[0] = ch;
+            write_addr[1] = console_color;
+        }
+    }
     set_cursor(console_row, console_col);
-
     return ch;
 }
 
@@ -118,7 +177,7 @@ clear_console(void)
     char *curr = (char*)CONSOLE_MEM_BASE;
     char *end = (char*)(CONSOLE_MEM_BASE + CONSOLE_HEIGHT * CONSOLE_WIDTH);
     while (curr < end) {
-        curr[0] = 0;
+        curr[0] = ASCII_SPACE;
         curr += 2;
     }
     console_row = 0;
