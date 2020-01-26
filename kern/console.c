@@ -94,6 +94,7 @@ int putbyte( char ch )
     return ch;
 }
 
+/* TODO: what is len > strlen(s)? */
 void
 putbytes( const char *s, int len )
 {
