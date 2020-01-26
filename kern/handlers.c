@@ -1,8 +1,12 @@
 #include <p1kern.h>
 #include <asm.h>
 #include <timer_defines.h>
+#include <interrupt_defines.h>
 #include <seg.h>
 #include <stdint.h>
+#include <simics.h>
+
+#include <handlers_asm.h>
 
 #define GATE_SIZE 8
 
@@ -11,6 +15,19 @@
 #define DPL_OFFSET 13
 #define SEGSEL_OFFSET 16
 #define CYCLES_10_MS 11932
+
+unsigned int numTicks = 0;
+void (*timer_function)(unsigned int) = 0;
+
+void timer_handler()
+{
+    numTicks++;
+    if (timer_function) {
+        timer_function(numTicks);
+    }
+
+    outb(INT_CTL_PORT, INT_ACK_CURRENT);
+}
 
 uint64_t pack(uint32_t dpl, uint32_t offset, uint32_t present, uint32_t seg_sel)
 {
@@ -31,7 +48,10 @@ int handler_install(void (*tickback)(unsigned int))
     uint32_t timer_offset = TIMER_IDT_ENTRY * GATE_SIZE;
     uint64_t *timer_idt_addr = (uint64_t*)((char*)idt_base_addr + timer_offset);
 
-    uint64_t gate = pack(0, (uint32_t)tickback, 1, SEGSEL_KERNEL_CS);
+    numTicks = 0;
+    timer_function = tickback;
+
+    uint64_t gate = pack(0, (uint32_t)timer_handler_wrapper, 1, SEGSEL_KERNEL_CS);
     *timer_idt_addr = gate;
 
     outb(TIMER_MODE_IO_PORT, TIMER_SQUARE_WAVE);
