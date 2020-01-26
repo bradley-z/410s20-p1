@@ -31,6 +31,10 @@ void scroll()
             old_addr[1] = new_addr[1];
         }
     }
+    for (j = 0; j < CONSOLE_WIDTH; j++) {
+        char *addr = (char*)(CONSOLE_MEM_BASE + 2 * ((CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH + j));
+        addr[0] = ASCII_SPACE;
+    }
 }
 
 int putbyte( char ch )
@@ -41,7 +45,7 @@ int putbyte( char ch )
     }
     else if (ch == '\n') {
         console_col = 0;
-        if (console_row == CONSOLE_WIDTH - 1) {
+        if (console_row == CONSOLE_HEIGHT - 1) {
             scroll();
         }
         else {
@@ -54,11 +58,13 @@ int putbyte( char ch )
             write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
             write_addr[0] = ASCII_SPACE;
             write_addr[1] = console_color;
-        } else {
+        }
+        else {
             if (console_row == 0) {
                 set_cursor(console_row, console_col);
                 return ch;
-            } else {
+            }
+            else {
                 console_row--;
                 console_col = CONSOLE_WIDTH - 1;
                 write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
@@ -68,10 +74,10 @@ int putbyte( char ch )
         }
     }
     else {
+        write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
+        write_addr[0] = ch;
+        write_addr[1] = console_color;
         if (console_col < CONSOLE_WIDTH - 1) {
-            write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
-            write_addr[0] = ch;
-            write_addr[1] = console_color;
             console_col++;
         }
         else {
@@ -79,9 +85,9 @@ int putbyte( char ch )
             if (console_row == CONSOLE_HEIGHT - 1) {
                 scroll();
             }
-            write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
-            write_addr[0] = ch;
-            write_addr[1] = console_color;
+            else {
+                console_row++;
+            }
         }
     }
     set_cursor(console_row, console_col);
