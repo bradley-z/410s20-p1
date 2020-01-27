@@ -73,6 +73,8 @@ void kb_handler()
 
     keypresses[write_index] = keypress;
 
+    lprintf("%d", keypress);
+
     write_index = (write_index + 1) % CIRCULAR_BUFFER_SIZE;
 
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
