@@ -67,19 +67,19 @@ int readchar(void)
 // TODO: make this threadsafe??? cas on the buffer?
 void kb_handler()
 {
-    disable_interrupts();
+    if ((read_index + 1) % 256 == write_index) {
+        return;
+    }
+    // okay so we're not going to be prempted by another kb interrupt,
+    // what happens if we get premepted by the timer? or readchar?
 
     int keypress = inb(KEYBOARD_PORT);
 
     keypresses[write_index] = keypress;
 
-    lprintf("%d", keypress);
-
     write_index = (write_index + 1) % CIRCULAR_BUFFER_SIZE;
 
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
-
-    enable_interrupts();
 }
 
 // TODO: in what case would i error?

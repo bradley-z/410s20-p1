@@ -25,10 +25,9 @@ void scroll()
     int i, j;
     for (i = 0; i < CONSOLE_HEIGHT - 1; i++) {
         for (j = 0; j < CONSOLE_WIDTH; j++) {
-            char *old_addr = (char*)(CONSOLE_MEM_BASE + 2 * (i * CONSOLE_WIDTH + j));
-            char *new_addr = (char*)(CONSOLE_MEM_BASE + 2 * ((i + 1) * CONSOLE_WIDTH + j));
-            old_addr[0] = new_addr[0];
-            old_addr[1] = new_addr[1];
+            uint16_t *old_addr = (uint16_t*)(CONSOLE_MEM_BASE + 2 * (i * CONSOLE_WIDTH + j));
+            uint16_t *new_addr = (uint16_t*)(CONSOLE_MEM_BASE + 2 * ((i + 1) * CONSOLE_WIDTH + j));
+            *old_addr = *new_addr;
         }
     }
     for (j = 0; j < CONSOLE_WIDTH; j++) {
@@ -95,8 +94,7 @@ int putbyte( char ch )
 }
 
 /* TODO: what is len > strlen(s)? */
-void
-putbytes( const char *s, int len )
+void putbytes( const char *s, int len )
 {
     if (len <= 0 || s == NULL) {
         return;
@@ -108,8 +106,7 @@ putbytes( const char *s, int len )
     }
 }
 
-int
-set_term_color( int color )
+int set_term_color( int color )
 {
     // is blink in range?
     if (color > 0x7F) {
@@ -119,14 +116,12 @@ set_term_color( int color )
     return 0;
 }
 
-void
-get_term_color( int *color )
+void get_term_color( int *color )
 {
     *color = console_color;
 }
 
-int
-set_cursor( int row, int col )
+int set_cursor( int row, int col )
 {
     if (!in_range(row, col)) {
         return -1;
@@ -148,15 +143,13 @@ set_cursor( int row, int col )
     return 0;
 }
 
-void
-get_cursor( int *row, int *col )
+void get_cursor( int *row, int *col )
 {
     *row = console_row;
     *col = console_col;
 }
 
-void
-hide_cursor(void)
+void hide_cursor(void)
 {
     cursor_shown = false;
 
@@ -170,15 +163,13 @@ hide_cursor(void)
     outb(CRTC_DATA_REG, bottom_half);
 }
 
-void
-show_cursor(void)
+void show_cursor(void)
 {
     cursor_shown = true;
     set_cursor(console_row, console_col);
 }
 
-void
-clear_console(void)
+void clear_console(void)
 {
     // no we want to skip the second byte since that deals with color
     char *curr = (char*)CONSOLE_MEM_BASE;
@@ -195,8 +186,7 @@ clear_console(void)
 }
 
 // what do i do about \r or \b or \n and where does cursor go after?
-void
-draw_char( int row, int col, int ch, int color )
+void draw_char( int row, int col, int ch, int color )
 {
     if (!in_range(row, col)) {
         return;
@@ -209,8 +199,7 @@ draw_char( int row, int col, int ch, int color )
     write_addr[1] = color;
 }
 
-char
-get_char( int row, int col )
+char get_char( int row, int col )
 {
     char *read_addr = (char*)(CONSOLE_MEM_BASE + 2 * (row * CONSOLE_WIDTH + col));
     return *read_addr;
