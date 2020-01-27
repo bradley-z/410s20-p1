@@ -8,7 +8,8 @@
 #include <keyhelp.h>
 
 #include <handlers_asm.h>
-#include <kb.h>
+#include <timer.h>
+#include <kb_buffer.h>
 
 #define GATE_SIZE 8
 
@@ -18,12 +19,8 @@
 #define SEGSEL_OFFSET 16
 #define CYCLES_10_MS 11932
 
-unsigned int numTicks = 0;
-void (*timer_function)(unsigned int) = 0;
-// TODO: is this even big enough? what if we press like three modifiers?
-extern int keypresses[CIRCULAR_BUFFER_SIZE];
-extern unsigned int read_index;
-extern unsigned int write_index;
+timer_t timer;
+extern kb_buf_t kb_buffer;
 
 uint64_t pack(uint32_t dpl, uint32_t offset, uint32_t present, uint32_t seg_sel)
 {
@@ -39,45 +36,21 @@ uint64_t pack(uint32_t dpl, uint32_t offset, uint32_t present, uint32_t seg_sel)
 
 void timer_handler()
 {
-    numTicks++;
-    if (timer_function) {
-        timer_function(numTicks);
-    }
+    timer_tick(&timer);
 
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
 }
 
-int readchar(void)
-{
-    int curr_scancode;
-    kh_type aug_char;
-    while (read_index != write_index) {
-        curr_scancode = keypresses[read_index];
-        aug_char = process_scancode(curr_scancode);
-
-        read_index = (read_index + 1) % CIRCULAR_BUFFER_SIZE;
-
-        if (KH_HASDATA(aug_char) && KH_ISMAKE(aug_char)) {
-            return KH_GETCHAR(aug_char);
-        }
-    }
-    return -1;
-}
-
-// TODO: make this threadsafe??? cas on the buffer?
+// circ bufs are inherently thread safe with one reader/writer and no other
+// interrupts touch the kb_buffer
 void kb_handler()
 {
-    if ((read_index + 1) % 256 == write_index) {
-        return;
-    }
-    // okay so we're not going to be prempted by another kb interrupt,
-    // what happens if we get premepted by the timer? or readchar?
-
+    // design choice, if the buf is full, do i want to drop before or after inb?
     int keypress = inb(KEYBOARD_PORT);
 
-    keypresses[write_index] = keypress;
-
-    write_index = (write_index + 1) % CIRCULAR_BUFFER_SIZE;
+    if (!kb_buf_write(&kb_buffer, keypress)) {
+        // no clue what to do if it's full
+    }
 
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
 }
@@ -86,14 +59,15 @@ void kb_handler()
 int handler_install(void (*tickback)(unsigned int))
 {
     void *idt_base_addr = idt_base();
+
     uint32_t timer_offset = TIMER_IDT_ENTRY * GATE_SIZE;
     uint64_t *timer_idt_addr = (uint64_t*)((char*)idt_base_addr + timer_offset);
 
-    numTicks = 0;
-    timer_function = tickback;
+    uint32_t kb_offset = KEY_IDT_ENTRY * GATE_SIZE;
+    uint64_t *kb_idt_addr = (uint64_t*)((char*)idt_base_addr + kb_offset);
 
-    read_index = 0;
-    write_index = 0;
+    timer_initialize(&timer, tickback);
+    kb_buf_clear(&kb_buffer);
 
     uint64_t timer_gate = pack(0, (uint32_t)timer_handler_wrapper, 1, SEGSEL_KERNEL_CS);
     *timer_idt_addr = timer_gate;
@@ -103,9 +77,6 @@ int handler_install(void (*tickback)(unsigned int))
     uint8_t period_msb = (uint8_t)(CYCLES_10_MS >> 8 | 0xFF);
     outb(TIMER_PERIOD_IO_PORT, period_lsb);
     outb(TIMER_PERIOD_IO_PORT, period_msb);
-
-    uint32_t kb_offset = KEY_IDT_ENTRY * GATE_SIZE;
-    uint64_t *kb_idt_addr = (uint64_t*)((char*)idt_base_addr + kb_offset);
 
     uint64_t kb_gate = pack(0, (uint32_t)kb_handler_wrapper, 1, SEGSEL_KERNEL_CS);
     *kb_idt_addr = kb_gate;

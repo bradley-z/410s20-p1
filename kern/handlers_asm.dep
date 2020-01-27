@@ -1,1 +1,0 @@
-kern/handlers_asm.o: kern/handlers_asm.S

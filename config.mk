@@ -62,7 +62,7 @@ CONFIG_DEBUG = kernel
 # the object files which make up your drivers.
 ##################################################
 #
-COMMON_OBJS = console.o handlers.o handlers_asm.o
+COMMON_OBJS = console.o handlers.o handlers_asm.o timer.o kb_buffer.o kb.o
 
 ##################################################
 # Object files from 410kern/ for just the game
