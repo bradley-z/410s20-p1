@@ -1,0 +1,8 @@
+*.o
+*.dep
+*.a
+kernel
+tester
+*.log
+*.strip
+bootfd.img
