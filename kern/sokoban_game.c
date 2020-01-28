@@ -56,20 +56,20 @@ void display_introduction()
     draw_image(15, 9, 7, 13, FGND_BRWN | BGND_BLACK, ascii_left_crate);
     draw_image(15, 58, 7, 12, FGND_BRWN | BGND_BLACK, ascii_right_crate);
 
-    set_cursor(15, 35);
+    set_cursor(15, 34);
     set_term_color(FGND_WHITE | BGND_BLACK);
-    printf("Hiscores:\n");
-    set_cursor(16, 31);
+    printf("Highscores:\n");
+    set_cursor(16, 30);
     printf("1 - Moves: %u\n", game.hiscores[0].num_moves);
-    set_cursor(17, 31);
+    set_cursor(17, 30);
     printf("    Time: %u\n", game.hiscores[0].time_seconds);
-    set_cursor(18, 31);
+    set_cursor(18, 30);
     printf("2 - Moves: %u\n", game.hiscores[1].num_moves);
-    set_cursor(19, 31);
+    set_cursor(19, 30);
     printf("    Time: %u\n", game.hiscores[1].time_seconds);
-    set_cursor(20, 31);
+    set_cursor(20, 30);
     printf("3 - Moves: %u\n", game.hiscores[2].num_moves);
-    set_cursor(21, 31);
+    set_cursor(21, 30);
     printf("    Time: %u\n", game.hiscores[2].time_seconds);
 }
 
