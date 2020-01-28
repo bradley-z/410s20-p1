@@ -93,7 +93,6 @@ int putbyte( char ch )
     return ch;
 }
 
-/* TODO: what is len > strlen(s)? */
 void putbytes( const char *s, int len )
 {
     if (len <= 0 || s == NULL) {
@@ -102,14 +101,17 @@ void putbytes( const char *s, int len )
 
     int i;
     for (i = 0; i < len; i++) {
+        if (s[i] == '\0') {
+            return;
+        }
         putbyte(s[i]);
     }
 }
 
 int set_term_color( int color )
 {
-    // is blink in range?
-    if (color > 0x7F) {
+    // considering blink in range
+    if ((unsigned int)color > 0xFF) {
         return -1;
     }
     console_color = color;
@@ -126,8 +128,6 @@ int set_cursor( int row, int col )
     if (!in_range(row, col)) {
         return -1;
     }
-    console_row = row;
-    console_col = col;
 
     if (cursor_shown) {
         uint16_t addr = row * CONSOLE_WIDTH + col;
@@ -171,7 +171,7 @@ void show_cursor(void)
 
 void clear_console(void)
 {
-    // no we want to skip the second byte since that deals with color
+    // we want to skip the second byte since that deals with color
     char *curr = (char*)CONSOLE_MEM_BASE;
     char *end = (char*)(CONSOLE_MEM_BASE + CONSOLE_HEIGHT * CONSOLE_WIDTH);
     while (curr < end) {
@@ -185,13 +185,16 @@ void clear_console(void)
     }
 }
 
-// what do i do about \r or \b or \n and where does cursor go after?
 void draw_char( int row, int col, int ch, int color )
 {
     if (!in_range(row, col)) {
         return;
     }
-    if (color > 0x7F) {
+    if ((unsigned int)color > 0xFF) {
+        return;
+    }
+    // the ascii range of printable chars as defined in keyhelp.h
+    if (!(ch >= 0x20 && ch <= 0x7F)) {
         return;
     }
     char *write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (row * CONSOLE_WIDTH + col));
