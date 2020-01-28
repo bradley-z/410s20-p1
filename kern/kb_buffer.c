@@ -1,6 +1,6 @@
 #include <kb_buffer.h>
 
-void kb_buf_clear(kb_buf_t *kb_buf)
+void kb_buf_initialize(kb_buf_t *kb_buf)
 {
     kb_buf->read_index = 0;
     kb_buf->write_index = 0;

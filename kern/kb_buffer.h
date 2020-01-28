@@ -13,7 +13,7 @@ typedef struct {
     int write_index;
 } kb_buf_t;
 
-void kb_buf_clear(kb_buf_t *kb_buf);
+void kb_buf_initialize(kb_buf_t *kb_buf);
 bool kb_buf_read(kb_buf_t *kb_buf, int *read_result);
 bool kb_buf_write(kb_buf_t *kb_buf, int keypress);
 

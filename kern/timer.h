@@ -1,6 +1,8 @@
 #ifndef __TIMER_H
 #define __TIMER_H
 
+#define CYCLES_10_MS 11932
+
 typedef struct {
     unsigned int numTicks;
     void (*tickback)(unsigned int);

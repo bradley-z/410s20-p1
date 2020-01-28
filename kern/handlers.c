@@ -14,30 +14,63 @@
 #define GATE_SIZE 8
 
 #define PRESENT_MASK 0x8000
-#define GATE_MASK 0xF00 
-#define DPL_OFFSET 13
-#define SEGSEL_OFFSET 16
-#define CYCLES_10_MS 11932
+#define DPL_SHIFT 13
+#define SIZE_MASK 0x800
+#define TOP_HALF_MASK 0xFFFF0000
+#define LOWER_HALF_MASK 0xFFFF
+#define SEGSEL_SHIFT 16
+
+typedef enum {
+    TASK = 0x500,
+    INTERRUPT = 0x600,
+    TRAP = 0x700,
+} gate_t;
 
 timer_t timer;
 extern kb_buf_t kb_buffer;
 
-uint64_t pack(uint32_t dpl, uint32_t offset, uint32_t present, uint32_t seg_sel)
+uint64_t idt_entry_pack(gate_t gate_type, uint32_t dpl, uint32_t offset,
+              uint8_t present, uint32_t seg_sel, uint8_t gate_size)
 {
-    uint32_t top_half = offset & 0xFFFF0000;
-    if (present) {
-        top_half |= PRESENT_MASK;
+    uint32_t top_half = 0;
+    uint32_t bottom_half = 0;
+    if (gate_type == TASK) {
+        if (present) {
+            top_half |= PRESENT_MASK;
+        }
+        top_half |= dpl << DPL_SHIFT;
+        top_half |= TASK;
+
+        bottom_half |= SEGSEL_TSS << SEGSEL_SHIFT;
     }
-    top_half |= (dpl << DPL_OFFSET);
-    top_half |= GATE_MASK;
-    uint32_t bottom_half = seg_sel << SEGSEL_OFFSET | (offset & 0xFFFF);
+    else {
+        top_half |= offset & TOP_HALF_MASK;
+        if (present) {
+            top_half |= PRESENT_MASK;
+        }
+        if (gate_size) {
+            top_half |= SIZE_MASK;
+        }
+        top_half |= dpl << DPL_SHIFT;
+        top_half |= gate_type;
+
+        bottom_half = seg_sel << SEGSEL_SHIFT | (offset & LOWER_HALF_MASK);
+    }
+
     return (uint64_t)top_half << 32 | (uint64_t)bottom_half;
+}
+
+void km_idt_install(void *idt_base_addr, unsigned int idt_entry, void *handler)
+{
+    uint32_t offset = idt_entry * GATE_SIZE;
+    uint64_t *idt_entry_addr = (uint64_t*)((char*)idt_base_addr + offset);
+    uint64_t packed_gate = idt_entry_pack(TRAP, 0, (uint32_t)handler, 1, SEGSEL_KERNEL_CS, 1);
+    *idt_entry_addr = packed_gate;
 }
 
 void timer_handler()
 {
     timer_tick(&timer);
-
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
 }
 
@@ -47,39 +80,22 @@ void kb_handler()
 {
     // design choice, if the buf is full, do i want to drop before or after inb?
     int keypress = inb(KEYBOARD_PORT);
-
     if (!kb_buf_write(&kb_buffer, keypress)) {
         // no clue what to do if it's full
     }
-
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
 }
 
-// TODO: in what case would i error?
+// TODO: in what case would handler_install error?
 int handler_install(void (*tickback)(unsigned int))
 {
+    timer_initialize(&timer, tickback);
+    kb_buf_initialize(&kb_buffer);
+
     void *idt_base_addr = idt_base();
 
-    uint32_t timer_offset = TIMER_IDT_ENTRY * GATE_SIZE;
-    uint64_t *timer_idt_addr = (uint64_t*)((char*)idt_base_addr + timer_offset);
-
-    uint32_t kb_offset = KEY_IDT_ENTRY * GATE_SIZE;
-    uint64_t *kb_idt_addr = (uint64_t*)((char*)idt_base_addr + kb_offset);
-
-    timer_initialize(&timer, tickback);
-    kb_buf_clear(&kb_buffer);
-
-    uint64_t timer_gate = pack(0, (uint32_t)timer_handler_wrapper, 1, SEGSEL_KERNEL_CS);
-    *timer_idt_addr = timer_gate;
-
-    outb(TIMER_MODE_IO_PORT, TIMER_SQUARE_WAVE);
-    uint8_t period_lsb = (uint8_t)(CYCLES_10_MS | 0xFF);
-    uint8_t period_msb = (uint8_t)(CYCLES_10_MS >> 8 | 0xFF);
-    outb(TIMER_PERIOD_IO_PORT, period_lsb);
-    outb(TIMER_PERIOD_IO_PORT, period_msb);
-
-    uint64_t kb_gate = pack(0, (uint32_t)kb_handler_wrapper, 1, SEGSEL_KERNEL_CS);
-    *kb_idt_addr = kb_gate;
+    km_idt_install(idt_base_addr, TIMER_IDT_ENTRY, timer_handler_wrapper);
+    km_idt_install(idt_base_addr, KEY_IDT_ENTRY, kb_handler_wrapper);
 
     return 0;
 }
