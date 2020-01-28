@@ -68,7 +68,7 @@ void display_introduction()
     set_cursor(19, 31);
     printf("    Time: %u\n", game.hiscores[1].time_seconds);
     set_cursor(20, 31);
-    printf("1 - Moves: %u\n", game.hiscores[2].num_moves);
+    printf("3 - Moves: %u\n", game.hiscores[2].num_moves);
     set_cursor(21, 31);
     printf("    Time: %u\n", game.hiscores[2].time_seconds);
 }
