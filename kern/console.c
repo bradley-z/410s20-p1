@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 #include <asm.h>
 
 #include <simics.h>
@@ -22,17 +23,16 @@ bool in_range(int row, int col)
 
 void scroll()
 {
-    int i, j;
-    for (i = 0; i < CONSOLE_HEIGHT - 1; i++) {
-        for (j = 0; j < CONSOLE_WIDTH; j++) {
-            uint16_t *old_addr = (uint16_t*)(CONSOLE_MEM_BASE + 2 * (i * CONSOLE_WIDTH + j));
-            uint16_t *new_addr = (uint16_t*)(CONSOLE_MEM_BASE + 2 * ((i + 1) * CONSOLE_WIDTH + j));
-            *old_addr = *new_addr;
-        }
-    }
-    for (j = 0; j < CONSOLE_WIDTH; j++) {
-        char *addr = (char*)(CONSOLE_MEM_BASE + 2 * ((CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH + j));
-        addr[0] = ASCII_SPACE;
+    memmove((void*)CONSOLE_MEM_BASE,
+            (void*)(CONSOLE_MEM_BASE + 2 * CONSOLE_WIDTH),
+            (2 * (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH));
+    
+    char *last_row = (char*)(CONSOLE_MEM_BASE +
+                             (2 * (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH));
+    char *limit = last_row + (2 * CONSOLE_WIDTH);
+    while (last_row < limit) {
+        last_row[0] = ' ';
+        last_row += 2;
     }
 }
 

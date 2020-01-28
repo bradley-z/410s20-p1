@@ -38,6 +38,8 @@ void tick(unsigned int numTicks);
 
 volatile static int __kernel_all_done = 0;
 
+int seconds = 0;
+
 /** @brief Kernel entrypoint.
  *  
  *  This is the entrypoint for the kernel.  It simply sets up the
@@ -52,6 +54,14 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
      */
     handler_install(tick);
 
+    enable_interrupts();
+
+    clear_console();
+
+    show_cursor();
+
+    set_term_color(FGND_GREEN | BGND_BLACK);
+
     /*
      * When kernel_main() begins, interrupts are DISABLED.
      * You should delete this comment, and enable them --
@@ -61,6 +71,14 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     lprintf( "Hello from a brand new kernel!" );
 
     lprintf( "Available levels: %d/%d.", soko_nlevels, MAX_LEVELS );
+
+    char c;
+    do {
+        c = readchar();
+        if (c != -1) {
+            putbyte(c);
+        }
+    } while(1);
 
     while (!__kernel_all_done) {
         continue;
@@ -77,4 +95,6 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
  **/
 void tick(unsigned int numTicks)
 {
+    if (numTicks % 100 == 0)
+      lprintf("%d seconds", ++seconds);
 }
