@@ -60,7 +60,7 @@ uint64_t idt_entry_pack(gate_t gate_type, uint32_t dpl, uint32_t offset,
     return (uint64_t)top_half << 32 | (uint64_t)bottom_half;
 }
 
-void km_idt_install(void *idt_base_addr, unsigned int idt_entry, void *handler)
+void install_idt_km(void *idt_base_addr, unsigned int idt_entry, void *handler)
 {
     uint32_t offset = idt_entry * GATE_SIZE;
     uint64_t *idt_entry_addr = (uint64_t*)((char*)idt_base_addr + offset);
@@ -94,8 +94,8 @@ int handler_install(void (*tickback)(unsigned int))
 
     void *idt_base_addr = idt_base();
 
-    km_idt_install(idt_base_addr, TIMER_IDT_ENTRY, timer_handler_wrapper);
-    km_idt_install(idt_base_addr, KEY_IDT_ENTRY, kb_handler_wrapper);
+    install_idt_km(idt_base_addr, TIMER_IDT_ENTRY, timer_handler_wrapper);
+    install_idt_km(idt_base_addr, KEY_IDT_ENTRY, kb_handler_wrapper);
 
     return 0;
 }

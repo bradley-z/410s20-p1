@@ -35,6 +35,7 @@ void tick(unsigned int numTicks);
 #include <string.h>
 
 #include <sokoban.h>
+#include <sokoban_game.h>
 
 volatile static int __kernel_all_done = 0;
 
@@ -52,15 +53,19 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
      */
     handler_install(tick);
 
-    /*
-     * When kernel_main() begins, interrupts are DISABLED.
-     * You should delete this comment, and enable them --
-     * when you are ready.
-     */
+    enable_interrupts();
+
+    clear_console();
+
+    hide_cursor();
+
+    set_term_color(FGND_GREEN | BGND_BLACK);
 
     lprintf( "Hello from a brand new kernel!" );
 
     lprintf( "Available levels: %d/%d.", soko_nlevels, MAX_LEVELS );
+
+    sokoban_initialize_and_run();
 
     while (!__kernel_all_done) {
         continue;

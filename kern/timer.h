@@ -1,5 +1,5 @@
-#ifndef __TIMER_H
-#define __TIMER_H
+#ifndef __TIMER_H_
+#define __TIMER_H_
 
 #define CYCLES_10_MS 11932
 
@@ -11,4 +11,4 @@ typedef struct {
 void timer_initialize(timer_t *timer, void (*tickback)(unsigned int));
 void timer_tick(timer_t *timer);
 
-#endif /* __TIMER_H */
+#endif /* __TIMER_H_ */

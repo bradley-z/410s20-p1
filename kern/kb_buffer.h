@@ -1,5 +1,5 @@
-#ifndef __KB_BUFFER_H
-#define __KB_BUFFER_H
+#ifndef __KB_BUFFER_H_
+#define __KB_BUFFER_H_
 
 #include <stdbool.h>
 
@@ -17,4 +17,4 @@ void kb_buf_initialize(kb_buf_t *kb_buf);
 bool kb_buf_read(kb_buf_t *kb_buf, int *read_result);
 bool kb_buf_write(kb_buf_t *kb_buf, int keypress);
 
-#endif /* __KB_BUFFER_H */
+#endif /* __KB_BUFFER_H_ */

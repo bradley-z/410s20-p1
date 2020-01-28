@@ -36,7 +36,7 @@ void scroll()
     }
 }
 
-int putbyte( char ch )
+void write_char( char ch )
 {
     char *write_addr;
     if (ch == '\r') {
@@ -59,17 +59,14 @@ int putbyte( char ch )
             write_addr[1] = console_color;
         }
         else {
-            if (console_row == 0) {
-                set_cursor(console_row, console_col);
-                return ch;
-            }
-            else {
+            if (console_row != 0) {
                 console_row--;
                 console_col = CONSOLE_WIDTH - 1;
                 write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
                 write_addr[0] = ASCII_SPACE;
                 write_addr[1] = console_color;
             }
+            // if console_row == 0, do nothing
         }
     }
     else {
@@ -89,6 +86,11 @@ int putbyte( char ch )
             }
         }
     }
+}
+
+int putbyte( char ch )
+{
+    write_char(ch);
     set_cursor(console_row, console_col);
     return ch;
 }
@@ -102,10 +104,12 @@ void putbytes( const char *s, int len )
     int i;
     for (i = 0; i < len; i++) {
         if (s[i] == '\0') {
-            return;
+            break;
         }
-        putbyte(s[i]);
+        write_char(s[i]);
     }
+
+    set_cursor(console_row, console_col);
 }
 
 int set_term_color( int color )
