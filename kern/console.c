@@ -128,16 +128,11 @@ int set_cursor( int row, int col )
     if (!in_range(row, col)) {
         return -1;
     }
+    console_row = row;
+    console_col = col;
 
     if (cursor_shown) {
-        uint16_t addr = row * CONSOLE_WIDTH + col;
-        uint8_t top_half = (addr >> 8) & 0xFF;
-        uint8_t bottom_half = addr & 0xFF;
-
-        outb(CRTC_IDX_REG, CRTC_CURSOR_MSB_IDX);
-        outb(CRTC_DATA_REG, top_half);
-        outb(CRTC_IDX_REG, CRTC_CURSOR_LSB_IDX);
-        outb(CRTC_DATA_REG, bottom_half);
+        show_cursor();
     }
 
     return 0;
@@ -166,7 +161,15 @@ void hide_cursor(void)
 void show_cursor(void)
 {
     cursor_shown = true;
-    set_cursor(console_row, console_col);
+
+    uint16_t addr = console_row * CONSOLE_WIDTH + console_col;
+    uint8_t top_half = (addr >> 8) & 0xFF;
+    uint8_t bottom_half = addr & 0xFF;
+
+    outb(CRTC_IDX_REG, CRTC_CURSOR_MSB_IDX);
+    outb(CRTC_DATA_REG, top_half);
+    outb(CRTC_IDX_REG, CRTC_CURSOR_LSB_IDX);
+    outb(CRTC_DATA_REG, bottom_half);
 }
 
 void clear_console(void)
