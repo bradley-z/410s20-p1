@@ -3,6 +3,11 @@
 #include <p1kern.h>
 #include <video_defines.h>
 #include <stdio.h>
+#include <string.h>
+#include <keyset.h>
+
+#define CONSOLE_SIZE (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH)
+char saved_screen[CONSOLE_SIZE];
 
 const char *ascii_sokoban = "\
    _____       _         _                 \
@@ -30,7 +35,35 @@ const char *ascii_right_crate = "\
  `. |   `. |\
    `+------+";
 
+keyset_t keyset;
 game_t game;
+
+void handle_input(char ch)
+{
+    switch (ch) {
+        case 'i':
+            if (game.game_state == INTRODUCTION) {
+                display_instructions();
+            }
+            else if (game.game_state == INSTRUCTIONS) {
+                if (game.previous_state == INTRODUCTION) {
+                    display_introduction();
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+char poll_for_input()
+{
+    int ch;
+    do {
+        ch = readchar();
+    } while (ch == -1 && !keyset_contains(&keyset, (char)ch));
+    return ch;
+}
 
 void draw_image(int start_row, int start_col,
                 int height, int width,
@@ -48,8 +81,20 @@ void draw_image(int start_row, int start_col,
     }
 }
 
+void display_instructions()
+{
+    game.previous_state = game.game_state;
+    game.game_state = INSTRUCTIONS;
+    clear_console();
+    set_cursor(0, 0);
+    printf("Instructions!\n\nPress 'i' to return");
+}
+
 void display_introduction()
 {
+    game.previous_state = game.game_state;
+    game.game_state = INTRODUCTION;
+    clear_console();
     draw_image(2, 18, 6, 43, FGND_BBLUE | BGND_BLACK, ascii_sokoban);
     draw_image(9, 28, 1, 23, FGND_YLLW | BGND_BLACK, name);
     draw_image(11, 17, 1, 46, FGND_WHITE | BGND_BLACK, intro_screen_message);
@@ -75,10 +120,21 @@ void display_introduction()
 
 void sokoban_initialize_and_run()
 {    
+    keyset_initialize(&keyset);
+    keyset_insert(&keyset, 'i');
+
     score_t default_score = { UINT32_MAX, UINT32_MAX };
     game.hiscores[0] = default_score;
     game.hiscores[1] = default_score;
     game.hiscores[2] = default_score;
+    game.game_state = INTRODUCTION;
+    game.previous_state = INTRODUCTION;
 
     display_introduction();
+
+    char c;
+    while (1) {
+        c = poll_for_input();
+        handle_input(c);
+    }
 }

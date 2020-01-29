@@ -180,7 +180,7 @@ void clear_console(void)
 {
     // we want to skip the second byte since that deals with color
     char *curr = (char*)CONSOLE_MEM_BASE;
-    char *end = (char*)(CONSOLE_MEM_BASE + CONSOLE_HEIGHT * CONSOLE_WIDTH);
+    char *end = (char*)(CONSOLE_MEM_BASE + (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH));
     while (curr < end) {
         curr[0] = ASCII_SPACE;
         curr += 2;
