@@ -4,7 +4,6 @@
 #include <video_defines.h>
 #include <stdio.h>
 #include <string.h>
-// TODO: get rid of this keyset thing and just have handle input handle everything
 #include <sokoban.h>
 
 #define ASCII_SPACE 0x20
