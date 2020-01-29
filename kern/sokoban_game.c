@@ -6,6 +6,8 @@
 #include <string.h>
 #include <sokoban.h>
 
+#include <simics.h>
+
 #define ASCII_SPACE 0x20
 
 #define MY_SOK_WALL   ((char)0xB0)
@@ -17,8 +19,10 @@
 #define BOX_COLOR (FGND_BRWN | BGND_BLACK)
 #define GOAL_COLOR (FGND_YLLW | BGND_BLACK)
 
-#define SOK_BOX_ON_GOAL ('O')
+#define MY_SOK_BOX_ON_GOAL ('O')
 #define BOX_ON_GOAL_COLOR (FGND_GREEN | BGND_BLACK)
+
+#define GAME_LEVELS (soko_nlevels)
 
 #define CONSOLE_SIZE (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH)
 char saved_screen[CONSOLE_SIZE];
@@ -61,6 +65,16 @@ void sokoban_tickback(unsigned int numTicks)
     if (current_game.game_state != RUNNING) {
         return;
     }
+}
+
+void start_sokoban_level(int level_number)
+{
+    sokoban.state = LEVEL_RUNNING;
+
+    current_game.level = soko_levels[level_number];
+    current_game.level_number = level_number;
+
+    restart_current_level();
 }
 
 level_info_t draw_sokoban_level(sokolevel_t *level)
@@ -144,9 +158,19 @@ void print_current_game_time()
     printf("Time: %d", current_game.level_ticks / 100);
 }
 
-void level_up()
+void complete_level()
 {
-    display_introduction();
+    current_game.game_state = IN_LEVEL_SUMMARY;
+
+    current_game.total_ticks += current_game.level_ticks;
+    current_game.total_moves += current_game.level_moves;
+    if (current_game.level_number == GAME_LEVELS - 1) {
+        complete_game();
+    }
+    else {
+        clear_console();
+        printf("Congrats on completing level %d!\n\nMoves: %d\n Time: %d seconds\n\n Press any key to go to next level.", current_game.level_number + 1, current_game.level_moves, current_game.level_ticks / 100);
+    }
 }
 
 void try_move(dir_t dir)
@@ -278,14 +302,14 @@ void try_move(dir_t dir)
                 draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
             }
             draw_char(new_row, new_col, MY_SOK_PLAYER, PLAYER_COLOR);
-            draw_char(next_next_square_row, next_next_square_col, SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
+            draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
             current_game.level_moves++;
             current_game.boxes_left--;
             current_game.curr_row = new_row;
             current_game.curr_col = new_col;
         }
     }
-    else if (next_square == SOK_BOX_ON_GOAL) {
+    else if (next_square == MY_SOK_BOX_ON_GOAL) {
         int next_next_square_row, next_next_square_col;
 
         switch (dir) {
@@ -347,7 +371,7 @@ void try_move(dir_t dir)
                 current_game.on_goal = true;
             }
             draw_char(new_row, new_col, MY_SOK_PLAYER, PLAYER_COLOR);
-            draw_char(next_next_square_row, next_next_square_col, SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
+            draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
             current_game.level_moves++;
             current_game.curr_row = new_row;
             current_game.curr_col = new_col;
@@ -356,12 +380,17 @@ void try_move(dir_t dir)
     print_current_game_moves();
 
     if (current_game.boxes_left == 0) {
-        level_up();
+        complete_level();
     }
 }
 
 void handle_input(char ch)
 {
+    if (sokoban.state == LEVEL_RUNNING && current_game.game_state == IN_LEVEL_SUMMARY) {
+        level_up();
+        return;
+    }
+
     switch (ch) {
         case 'i':
             if (sokoban.state == INTRODUCTION) {
@@ -402,13 +431,13 @@ void handle_input(char ch)
             }
             break;
         case 'q':
-            if (sokoban.state == LEVEL_RUNNING) {
+            if (sokoban.state == LEVEL_RUNNING && current_game.game_state == RUNNING) {
                 quit_game();
             }
             break;
         case 'r':
             if (sokoban.state == LEVEL_RUNNING && current_game.game_state == RUNNING) {
-                restart_level();
+                restart_current_level();
             }
             break;
         case 'w':
@@ -452,12 +481,46 @@ void draw_image(int start_row, int start_col,
     }
 }
 
+void level_up()
+{
+    current_game.level_number++;
+    if (current_game.level_number == GAME_LEVELS) {
+        display_introduction();
+    }
+    else {
+        start_sokoban_level(current_game.level_number);
+    }
+}
+
+void complete_game()
+{
+    // save the moves and seconds and compare to hiscores, insert into hiscores
+    // display congrats screen, total moves and time
+    score_t score = { current_game.total_moves, current_game.total_ticks / 100 };
+
+    int i;
+    for (i = 0; i < 3; i++) {
+        if (score.num_moves < sokoban.hiscores[i].num_moves ||
+           (score.num_moves == sokoban.hiscores[i].num_moves && score.time_seconds < sokoban.hiscores[i].time_seconds)) {
+            int j;
+            for (j = i + 1; j < 3; j++) {
+                sokoban.hiscores[j] = sokoban.hiscores[j - 1];
+            }
+            sokoban.hiscores[i] = score;
+            break;
+        }
+    }
+
+    clear_console();
+    printf("Congrats! You've commpleted all the levels.\n\n Moves: %d\n Time: %d seconds\n\n Press any key to return to introduction screen.", current_game.total_moves, current_game.total_ticks / 100);
+}
+
 void quit_game()
 {
     display_introduction();
 }
 
-void restart_level()
+void restart_current_level()
 {
     current_game.game_state = PAUSED;
     current_game.level_ticks = 0;
@@ -478,30 +541,17 @@ void pause_game()
     current_game.game_state = PAUSED;
     clear_console();
 
-    set_cursor(0, 0);
     printf("Paused!\n\nPress 'p' to unpause");
 }
 
 void start_game()
 {
     sokoban.previous_state = sokoban.state;
-    sokoban.state = LEVEL_RUNNING;
 
-    current_game.level = soko_levels[0];
-    current_game.level_number = 0;
     current_game.total_ticks = 0;
-    current_game.level_ticks = 0;
     current_game.total_moves = 0;
-    current_game.level_moves = 0;
-    current_game.on_goal = false;
 
-    level_info_t level_info = draw_sokoban_level(soko_levels[0]);
-
-    current_game.curr_row = level_info.start_row;
-    current_game.curr_col = level_info.start_col;
-    current_game.boxes_left = level_info.total_boxes;
-
-    current_game.game_state = RUNNING;
+    start_sokoban_level(0);
 }
 
 void display_instructions()
@@ -509,7 +559,6 @@ void display_instructions()
     sokoban.previous_state = sokoban.state;
     sokoban.state = INSTRUCTIONS;
     clear_console();
-    set_cursor(0, 0);
     printf("Instructions!\n\nPress 'i' to return");
 }
 

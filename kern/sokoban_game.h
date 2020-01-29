@@ -15,6 +15,7 @@ typedef enum {
 typedef enum {
     RUNNING,
     PAUSED,
+    IN_LEVEL_SUMMARY,
 } game_state_t;
 
 typedef enum {
@@ -57,17 +58,20 @@ typedef struct {
 } sokoban_t;
 
 void sokoban_tickback(unsigned int numTicks);
+void start_sokoban_level(int level_number);
 level_info_t draw_sokoban_level(sokolevel_t *level);
 void print_current_game_moves(void);
 void print_current_game_time(void);
-void level_up();
+void complete_level(void);
 void try_move(dir_t dir);
 void handle_input(char ch);
 void draw_image(int start_row, int start_col,
                 int height, int width,
                 int color, const char *image);
+void level_up(void);
+void complete_game(void);
 void quit_game(void);
-void restart_level(void);
+void restart_current_level(void);
 void pause_game(void);
 void start_game(void);
 void display_instructions(void);
