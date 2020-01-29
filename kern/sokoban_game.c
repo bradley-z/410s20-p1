@@ -65,12 +65,17 @@ void sokoban_tickback(unsigned int numTicks)
     if (current_game.game_state != RUNNING) {
         return;
     }
+
+    if (++current_game.level_ticks % 100 == 0) {
+        print_current_game_time();
+    } 
 }
 
 void start_sokoban_level(int level_number)
 {
     sokoban.state = LEVEL_RUNNING;
 
+    current_game.level_ticks = 0;
     current_game.level = soko_levels[level_number];
     current_game.level_number = level_number;
 
@@ -523,7 +528,6 @@ void quit_game()
 void restart_current_level()
 {
     current_game.game_state = PAUSED;
-    current_game.level_ticks = 0;
     current_game.level_moves = 0;
     current_game.on_goal = false;
 
