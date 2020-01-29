@@ -79,7 +79,7 @@ COMMON_OBJS = console.o handlers.o handlers_asm.o timer.o kb_buffer.o kb.o
 # multiple parts.
 ##################################################
 #
-KERN_GAME_OBJS = game.o sokoban_game.o
+KERN_GAME_OBJS = game.o sokoban_game.o keyset.o
 
 ##################################################
 # Object files from 410kern/ for just the tester
