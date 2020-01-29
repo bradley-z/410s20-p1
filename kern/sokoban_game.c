@@ -4,8 +4,18 @@
 #include <video_defines.h>
 #include <stdio.h>
 #include <string.h>
+// TODO: get rid of this keyset thing and just have handle input handle everything
 #include <keyset.h>
 #include <sokoban.h>
+
+#define ASCII_SPACE 0x20
+
+#define PLAYER_COLOR (FGND_BCYAN | BGND_BLACK)
+#define BOX_COLOR (FGND_BRWN | BGND_BLACK)
+#define GOAL_COLOR (FGND_YLLW | BGND_BLACK)
+
+#define SOK_BOX_ON_GOAL ('B')
+#define BOX_ON_GOAL_COLOR (FGND_GREEN | BGND_BLACK)
 
 #define CONSOLE_SIZE (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH)
 char saved_screen[CONSOLE_SIZE];
@@ -20,7 +30,7 @@ const char *ascii_sokoban = "\
 const char *name = "Bradley Zhou (bradleyz)";
 const char *intro_screen_message = "Press 'i' for instructions or 'enter' to start";
 const char *game_screen_message = "Press 'i' for instructions, 'p' to pause, 'r' to restart, or 'q' to quit";
-const char *ascii_left_crate = "\
+const char *ascii_left_box = "\
     .+------+\
   .' |    .'|\
  +---+--+'  |\
@@ -28,7 +38,7 @@ const char *ascii_left_crate = "\
  |  ,+--+---+\
  |.'    | .' \
  +------+'   ";
-const char *ascii_right_crate = "\
+const char *ascii_right_box = "\
 +------+.   \
 |`.    | `. \
 |  `+--+---+\
@@ -51,20 +61,19 @@ void sokoban_tickback(unsigned int numTicks)
     }
 }
 
-int16_t draw_sokoban_level(sokolevel_t *level)
+level_info_t draw_sokoban_level(sokolevel_t *level)
 {
     clear_console();
 
-    int curr_draw_row = (CONSOLE_HEIGHT - level->height) / 2;
-    int curr_draw_col = (CONSOLE_WIDTH - level->width) / 2;
-    int start_draw_col = curr_draw_col;
-    int end_draw_col = curr_draw_col + level->width - 1;
+    int curr_row = (CONSOLE_HEIGHT - level->height) / 2;
+    int curr_col = (CONSOLE_WIDTH - level->width) / 2;
+    int first_col = curr_col;
+    int end_col = curr_col + level->width - 1;
 
     int total_pixels = level->height * level->width;
     int pixel_count;
 
-    int8_t level_start_row = 0;
-    int8_t level_start_col = 0;
+    level_info_t level_info = { 0, -1, -1 };
 
     for (pixel_count = 0; pixel_count < total_pixels; pixel_count++) {
         char ch = level->map[pixel_count];
@@ -75,49 +84,265 @@ int16_t draw_sokoban_level(sokolevel_t *level)
                 color = FGND_DGRAY | BGND_BLACK;
                 break;
             case (SOK_PUSH):
-                level_start_row = curr_draw_row;
-                level_start_col = curr_draw_col;
+                level_info.start_row = curr_row;
+                level_info.start_col = curr_col;
                 color = FGND_BCYAN | BGND_BLACK;
                 break;
             case (SOK_ROCK):
+                level_info.total_boxes++;
                 color = FGND_BRWN | BGND_BLACK;
                 break;
             case (SOK_GOAL):
                 color = FGND_YLLW | BGND_BLACK;
                 break;
             default:
-                if (curr_draw_col == end_draw_col) {
-                    curr_draw_col = start_draw_col;
-                    curr_draw_row++;
+                if (curr_col == end_col) {
+                    curr_col = first_col;
+                    curr_row++;
                 }
                 else {
-                    curr_draw_col++;
+                    curr_col++;
                 }
                 continue;
         }
 
-        draw_char(curr_draw_row, curr_draw_col, ch, color);
-        if (curr_draw_col == end_draw_col) {
-            curr_draw_col = start_draw_col;
-            curr_draw_row++;
+        draw_char(curr_row, curr_col, ch, color);
+        if (curr_col == end_col) {
+            curr_col = first_col;
+            curr_row++;
         }
         else {
-            curr_draw_col++;
+            curr_col++;
         }
     }
 
-    int message_row = CONSOLE_HEIGHT - ((CONSOLE_HEIGHT - curr_draw_row) / 2) - 1;
+    int message_row = CONSOLE_HEIGHT - ((CONSOLE_HEIGHT - curr_row) / 2) - 1;
     set_cursor(message_row, 4);
     printf(game_screen_message);
+    print_current_game_moves();
     print_current_game_time();
 
-    return (int16_t)level_start_row << 8 | (int16_t)level_start_col;
+    return level_info;
+}
+
+// TODO: optimize these two by preprinting Moves: and Time:
+void print_current_game_moves()
+{
+    set_cursor(2, 4);
+    printf("Moves: %d", current_game.level_moves);
 }
 
 void print_current_game_time()
 {
-    set_cursor(2, 4);
-    printf("Time: %d", current_game.num_ticks / 100);
+    set_cursor(3, 4);
+    printf("Time: %d", current_game.level_ticks / 100);
+}
+
+void try_move(dir_t dir)
+{
+    int row = current_game.curr_row;
+    int col = current_game.curr_col;
+
+    int new_row, new_col;
+
+    switch (dir) {
+        case UP:
+            if (row - 1 < 0) {
+                return;
+            }
+            new_row = row - 1;
+            new_col = col;
+            break;
+        case DOWN:
+            if (row + 1 >= CONSOLE_HEIGHT) {
+                return;
+            }
+            new_row = row + 1;
+            new_col = col;
+            break;
+        case LEFT:
+            if (col - 1 < 0) {
+                return;
+            }
+            new_row = row;
+            new_col = col - 1;
+            break;
+        case RIGHT:
+            if (col + 1 >= CONSOLE_WIDTH - 1) {
+                return;
+            }
+            new_row = row;
+            new_col = col + 1;
+            break;
+        default:
+            return;
+    }
+
+    char next_square = get_char(new_row, new_col);
+    
+    if (next_square == ASCII_SPACE) {
+        if (current_game.on_goal) {
+            draw_char(row, col, SOK_GOAL, GOAL_COLOR);
+            current_game.on_goal = false;
+        }
+        else {
+            draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
+        }
+        draw_char(new_row, new_col, SOK_PUSH, PLAYER_COLOR);
+        current_game.level_moves++;
+        current_game.curr_row = new_row;
+        current_game.curr_col = new_col;
+    }
+    else if (next_square == SOK_GOAL) {
+        if (current_game.on_goal) {
+            draw_char(row, col, SOK_GOAL, GOAL_COLOR);
+        }
+        else {
+            draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
+            current_game.on_goal = true;
+        }
+        draw_char(new_row, new_col, SOK_PUSH, PLAYER_COLOR);
+        current_game.level_moves++;
+        current_game.curr_row = new_row;
+        current_game.curr_col = new_col;
+    }
+    else if (next_square == SOK_ROCK) {
+        int next_next_square_row, next_next_square_col;
+
+        switch (dir) {
+            case UP:
+                if (row - 2 < 0) {
+                    return;
+                }
+                next_next_square_row = row - 2;
+                next_next_square_col = col;
+                break;
+            case DOWN:
+                if (row + 2 >= CONSOLE_HEIGHT) {
+                    return;
+                }
+                next_next_square_row = row + 2;
+                next_next_square_col = col;
+                break;
+            case LEFT:
+                if (col - 2 < 0) {
+                    return;
+                }
+                next_next_square_row = row;
+                next_next_square_col = col - 2;
+                break;
+            case RIGHT:
+                if (col + 2 >= CONSOLE_WIDTH) {
+                    return;
+                }
+                next_next_square_row = row;
+                next_next_square_col = col + 2;
+                break;
+            default:
+                return;
+        }
+
+        char next_next_square = get_char(next_next_square_row, next_next_square_col);
+
+        if (next_next_square == ASCII_SPACE) {
+            if (current_game.on_goal) {
+                draw_char(row, col, SOK_GOAL, GOAL_COLOR);
+                current_game.on_goal = false;
+            }
+            else {
+                draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
+            }
+            draw_char(new_row, new_col, SOK_PUSH, PLAYER_COLOR);
+            draw_char(next_next_square_row, next_next_square_col, SOK_ROCK, BOX_COLOR);
+            current_game.level_moves++;
+            current_game.curr_row = new_row;
+            current_game.curr_col = new_col;
+        }
+        else if (next_next_square == SOK_GOAL) {
+            if (current_game.on_goal) {
+                draw_char(row, col, SOK_GOAL, GOAL_COLOR);
+                current_game.on_goal = false;
+            }
+            else {
+                draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
+            }
+            draw_char(new_row, new_col, SOK_PUSH, PLAYER_COLOR);
+            draw_char(next_next_square_row, next_next_square_col, SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
+            current_game.level_moves++;
+            current_game.boxes_left--;
+            current_game.curr_row = new_row;
+            current_game.curr_col = new_col;
+        }
+    }
+    else if (next_square == SOK_BOX_ON_GOAL) {
+        int next_next_square_row, next_next_square_col;
+
+        switch (dir) {
+            case UP:
+                if (row - 2 < 0) {
+                    return;
+                }
+                next_next_square_row = row - 2;
+                next_next_square_col = col;
+                break;
+            case DOWN:
+                if (row + 2 >= CONSOLE_HEIGHT) {
+                    return;
+                }
+                next_next_square_row = row + 2;
+                next_next_square_col = col;
+                break;
+            case LEFT:
+                if (col - 2 < 0) {
+                    return;
+                }
+                next_next_square_row = row;
+                next_next_square_col = col - 2;
+                break;
+            case RIGHT:
+                if (col + 2 >= CONSOLE_WIDTH) {
+                    return;
+                }
+                next_next_square_row = row;
+                next_next_square_col = col + 2;
+                break;
+            default:
+                return;
+        }
+
+        char next_next_square = get_char(next_next_square_row, next_next_square_col);
+
+        if (next_next_square == ASCII_SPACE) {
+            if (current_game.on_goal) {
+                draw_char(row, col, SOK_GOAL, GOAL_COLOR);
+            }
+            else {
+                draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
+                current_game.on_goal = true;
+            }
+            draw_char(new_row, new_col, SOK_PUSH, PLAYER_COLOR);
+            draw_char(next_next_square_row, next_next_square_col, SOK_ROCK, BOX_COLOR);
+            current_game.level_moves++;
+            current_game.boxes_left++;
+            current_game.curr_row = new_row;
+            current_game.curr_col = new_col;
+        }
+        else if (next_next_square == SOK_GOAL) {
+            if (current_game.on_goal) {
+                draw_char(row, col, SOK_GOAL, GOAL_COLOR);
+            }
+            else {
+                draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
+                current_game.on_goal = true;
+            }
+            draw_char(new_row, new_col, SOK_PUSH, PLAYER_COLOR);
+            draw_char(next_next_square_row, next_next_square_col, SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
+            current_game.level_moves++;
+            current_game.curr_row = new_row;
+            current_game.curr_col = new_col;
+        }
+    }
+    print_current_game_moves();
 }
 
 void handle_input(char ch)
@@ -161,6 +386,24 @@ void handle_input(char ch)
                 }
             }
             break;
+        case 'q':
+            quit_game();
+            break;
+        case 'r':
+            restart_level();
+            break;
+        case 'w':
+            try_move(UP);
+            break;
+        case 's':
+            try_move(DOWN);
+            break;
+        case 'a':
+            try_move(LEFT);
+            break;
+        case 'd':
+            try_move(RIGHT);
+            break;
         default:
             break;
     }
@@ -191,6 +434,27 @@ void draw_image(int start_row, int start_col,
     }
 }
 
+void quit_game()
+{
+    display_introduction();
+}
+
+void restart_level()
+{
+    current_game.game_state = PAUSED;
+    current_game.level_ticks = 0;
+    current_game.level_moves = 0;
+    current_game.on_goal = false;
+
+    level_info_t level_info = draw_sokoban_level(current_game.level);
+
+    current_game.curr_row = level_info.start_row;
+    current_game.curr_col = level_info.start_col;
+    current_game.boxes_left = level_info.total_boxes;
+
+    current_game.game_state = RUNNING;
+}
+
 void pause_game()
 {
     current_game.game_state = PAUSED;
@@ -205,17 +469,20 @@ void start_game()
     sokoban.previous_state = sokoban.state;
     sokoban.state = LEVEL_RUNNING;
 
-    int16_t position = draw_sokoban_level(soko_levels[0]);
-    int row = (position >> 8) & 0xFF;
-    int col = position & 0xFF;
-
-    current_game.level = soko_levels[0];
-    current_game.level_number = 0;
-    current_game.cur_row = row;
-    current_game.cur_col = col;
-    current_game.num_ticks = 0;
+    current_game.level = soko_levels[2];
+    current_game.level_number = 2;
+    current_game.total_ticks = 0;
+    current_game.level_ticks = 0;
     current_game.total_moves = 0;
     current_game.level_moves = 0;
+    current_game.on_goal = false;
+
+    level_info_t level_info = draw_sokoban_level(soko_levels[2]);
+
+    current_game.curr_row = level_info.start_row;
+    current_game.curr_col = level_info.start_col;
+    current_game.boxes_left = level_info.total_boxes;
+
     current_game.game_state = RUNNING;
 }
 
@@ -236,8 +503,8 @@ void display_introduction()
     draw_image(2, 18, 6, 43, FGND_BBLUE | BGND_BLACK, ascii_sokoban);
     draw_image(9, 28, 1, 23, FGND_YLLW | BGND_BLACK, name);
     draw_image(11, 17, 1, 46, FGND_WHITE | BGND_BLACK, intro_screen_message);
-    draw_image(15, 9, 7, 13, FGND_BRWN | BGND_BLACK, ascii_left_crate);
-    draw_image(15, 58, 7, 12, FGND_BRWN | BGND_BLACK, ascii_right_crate);
+    draw_image(15, 9, 7, 13, FGND_BRWN | BGND_BLACK, ascii_left_box);
+    draw_image(15, 58, 7, 12, FGND_BRWN | BGND_BLACK, ascii_right_box);
 
     set_cursor(15, 34);
     set_term_color(FGND_WHITE | BGND_BLACK);
@@ -262,6 +529,8 @@ void sokoban_initialize_and_run()
     keyset_insert(&keyset, 'i');
     keyset_insert(&keyset, '\n');
     keyset_insert(&keyset, 'p');
+    keyset_insert(&keyset, 'q');
+    keyset_insert(&keyset, 'r');
     keyset_insert(&keyset, 'w');
     keyset_insert(&keyset, 'a');
     keyset_insert(&keyset, 's');

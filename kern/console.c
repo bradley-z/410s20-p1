@@ -7,7 +7,7 @@
 
 #include <simics.h>
 
-#define ASCII_SPACE 0x20;
+#define ASCII_SPACE 0x20
 
 int console_color = (FGND_GREEN | BGND_BLACK);
 int console_row = 0;
