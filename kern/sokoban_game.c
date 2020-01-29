@@ -6,8 +6,6 @@
 #include <string.h>
 #include <sokoban.h>
 
-#include <simics.h>
-
 #define ASCII_SPACE 0x20
 
 #define MY_SOK_WALL   ((char)0xB0)
@@ -21,8 +19,6 @@
 
 #define MY_SOK_BOX_ON_GOAL ('O')
 #define BOX_ON_GOAL_COLOR (FGND_GREEN | BGND_BLACK)
-
-#define GAME_LEVELS (soko_nlevels)
 
 #define CONSOLE_SIZE (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH)
 char saved_screen[CONSOLE_SIZE];
@@ -76,7 +72,7 @@ void start_sokoban_level(int level_number)
     sokoban.state = LEVEL_RUNNING;
 
     current_game.level_ticks = 0;
-    current_game.level = soko_levels[level_number];
+    current_game.level = soko_levels[level_number - 1];
     current_game.level_number = level_number;
 
     restart_current_level();
@@ -85,6 +81,9 @@ void start_sokoban_level(int level_number)
 level_info_t draw_sokoban_level(sokolevel_t *level)
 {
     clear_console();
+
+    set_cursor(1, 4);
+    printf("Level: %d", current_game.level_number);
 
     int curr_row = (CONSOLE_HEIGHT - level->height) / 2;
     int curr_col = (CONSOLE_WIDTH - level->width) / 2;
@@ -153,13 +152,13 @@ level_info_t draw_sokoban_level(sokolevel_t *level)
 // TODO: optimize these two by preprinting Moves: and Time:
 void print_current_game_moves()
 {
-    set_cursor(2, 4);
+    set_cursor(3, 4);
     printf("Moves: %d", current_game.level_moves);
 }
 
 void print_current_game_time()
 {
-    set_cursor(3, 4);
+    set_cursor(4, 4);
     printf("Time: %d", current_game.level_ticks / 100);
 }
 
@@ -169,12 +168,12 @@ void complete_level()
 
     current_game.total_ticks += current_game.level_ticks;
     current_game.total_moves += current_game.level_moves;
-    if (current_game.level_number == GAME_LEVELS - 1) {
+    if (current_game.level_number == soko_nlevels) {
         complete_game();
     }
     else {
         clear_console();
-        printf("Congrats on completing level %d!\n\nMoves: %d\n Time: %d seconds\n\n Press any key to go to next level.", current_game.level_number + 1, current_game.level_moves, current_game.level_ticks / 100);
+        printf("Congrats on completing level %d!\n\nMoves: %d\n Time: %d seconds\n\n Press any key to go to next level.", current_game.level_number, current_game.level_moves, current_game.level_ticks / 100);
     }
 }
 
@@ -488,11 +487,11 @@ void draw_image(int start_row, int start_col,
 
 void level_up()
 {
-    current_game.level_number++;
-    if (current_game.level_number == GAME_LEVELS) {
+    if (current_game.level_number == soko_nlevels) {
         display_introduction();
     }
     else {
+        current_game.level_number++;
         start_sokoban_level(current_game.level_number);
     }
 }
@@ -555,7 +554,7 @@ void start_game()
     current_game.total_ticks = 0;
     current_game.total_moves = 0;
 
-    start_sokoban_level(0);
+    start_sokoban_level(1);
 }
 
 void display_instructions()
