@@ -201,9 +201,9 @@ void draw_char( int row, int col, int ch, int color )
         return;
     }
     // the ascii range of printable chars as defined in keyhelp.h
-    if (!(ch >= 0x20 && ch <= 0x7F)) {
-        return;
-    }
+    // if (!(ch >= 0x20 && ch <= 0x7F)) {
+    //     return;
+    // }
     char *write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (row * CONSOLE_WIDTH + col));
     write_addr[0] = ch;
     write_addr[1] = color;

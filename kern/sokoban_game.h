@@ -41,7 +41,7 @@ typedef struct {
     int curr_row;
     int curr_col;
     int boxes_left;
-    
+
     game_state_t game_state;
 } game_t;
 
@@ -60,9 +60,9 @@ void sokoban_tickback(unsigned int numTicks);
 level_info_t draw_sokoban_level(sokolevel_t *level);
 void print_current_game_moves(void);
 void print_current_game_time(void);
+void level_up();
 void try_move(dir_t dir);
 void handle_input(char ch);
-char poll_for_input();
 void draw_image(int start_row, int start_col,
                 int height, int width,
                 int color, const char *image);
