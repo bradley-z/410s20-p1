@@ -19,6 +19,7 @@ const char *ascii_sokoban = "\
  |_____/ \\___/|_|\\_\\___/|_.__/ \\__,_|_| |_|";
 const char *name = "Bradley Zhou (bradleyz)";
 const char *intro_screen_message = "Press 'i' for instructions or 'enter' to start";
+const char *game_screen_message = "Press 'i' for instructions, 'p' to pause, 'r' to restart, or 'q' to quit";
 const char *ascii_left_crate = "\
     .+------+\
   .' |    .'|\
@@ -105,7 +106,18 @@ int16_t draw_sokoban_level(sokolevel_t *level)
         }
     }
 
+    int message_row = CONSOLE_HEIGHT - ((CONSOLE_HEIGHT - curr_draw_row) / 2) - 1;
+    set_cursor(message_row, 4);
+    printf(game_screen_message);
+    print_current_game_time();
+
     return (int16_t)level_start_row << 8 | (int16_t)level_start_col;
+}
+
+void print_current_game_time()
+{
+    set_cursor(2, 4);
+    printf("Time: %d", current_game.num_ticks / 100);
 }
 
 void handle_input(char ch)
@@ -136,6 +148,19 @@ void handle_input(char ch)
             if (sokoban.state == INTRODUCTION) {
                start_game(); 
             }
+            break;
+        case 'p':
+            if (sokoban.state == LEVEL_RUNNING) {
+                if (current_game.game_state == RUNNING) {
+                    memcpy((void*)saved_screen, (void*)CONSOLE_MEM_BASE, CONSOLE_SIZE);
+                    pause_game();
+                }
+                else if (current_game.game_state == PAUSED) {
+                    memcpy((void*)CONSOLE_MEM_BASE, (void*)saved_screen, CONSOLE_SIZE);
+                    current_game.game_state = RUNNING;
+                }
+            }
+            break;
         default:
             break;
     }
@@ -166,10 +191,14 @@ void draw_image(int start_row, int start_col,
     }
 }
 
-// void pause_game()
-// {
-//     game.game_state = PAUSED;
-// }
+void pause_game()
+{
+    current_game.game_state = PAUSED;
+    clear_console();
+
+    set_cursor(0, 0);
+    printf("Paused!\n\nPress 'p' to unpause");
+}
 
 void start_game()
 {
@@ -232,6 +261,11 @@ void sokoban_initialize_and_run()
     keyset_initialize(&keyset);
     keyset_insert(&keyset, 'i');
     keyset_insert(&keyset, '\n');
+    keyset_insert(&keyset, 'p');
+    keyset_insert(&keyset, 'w');
+    keyset_insert(&keyset, 'a');
+    keyset_insert(&keyset, 's');
+    keyset_insert(&keyset, 'd');
 
     score_t default_score = { UINT32_MAX, UINT32_MAX };
     sokoban.hiscores[0] = default_score;

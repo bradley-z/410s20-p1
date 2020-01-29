@@ -17,11 +17,11 @@ typedef enum {
     PAUSED,
 } game_state_t;
 
-// typedef struct {
-//     int number;
-//     sokolevel_t *level;
-//     bool running;
-// } board_state_t;
+typedef enum {
+    INTRODUCTION,
+    INSTRUCTIONS,
+    LEVEL_RUNNING,
+} sokoban_state_t;
 
 typedef struct {
     sokolevel_t *level;
@@ -33,12 +33,6 @@ typedef struct {
     unsigned int level_moves;
     game_state_t game_state;
 } game_t;
-
-typedef enum {
-    INTRODUCTION,
-    INSTRUCTIONS,
-    LEVEL_RUNNING,
-} sokoban_state_t;
 
 typedef struct {
     unsigned int num_moves;
@@ -53,11 +47,13 @@ typedef struct {
 
 void sokoban_tickback(unsigned int numTicks);
 int16_t draw_sokoban_level(sokolevel_t *level);
+void print_current_game_time(void);
 void handle_input(char ch);
 char poll_for_input();
 void draw_image(int start_row, int start_col,
                 int height, int width,
                 int color, const char *image);
+void pause_game(void);
 void start_game(void);
 void display_instructions(void);
 void display_introduction(void);
