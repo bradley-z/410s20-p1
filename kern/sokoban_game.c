@@ -65,7 +65,7 @@ const char *level_complete_messages[] = {
 
 const char *instructions[] = {
     "0. You are represented by '@', boxes by 'o', and target locations by 'x'",
-    "1. Use WASD to move the player onto empty squares",
+    "1. Use WASD or HJKL to move the player onto empty squares",
     "2. You can push boxes onto empty squares and target locations",
     "3. Boxes cannot be pulled, or pushed into other boxes or walls",
     "4. There is an equal number of boxes and target locations",
@@ -270,7 +270,6 @@ void try_move(char ch)
     }
 
     int new_row, new_col;
-
     switch (dir) {
         case UP:
             if (row - 1 < 0) {
@@ -305,28 +304,22 @@ void try_move(char ch)
     }
 
     char next_square = get_char(new_row, new_col);
-    
-    if (next_square == ASCII_SPACE) {
+    bool movable = (next_square == ASCII_SPACE) || (next_square == MY_SOK_GOAL);
+
+    if (movable) {
         if (current_game.on_goal) {
             draw_char(row, col, MY_SOK_GOAL, GOAL_COLOR);
-            current_game.on_goal = false;
+            if (next_square == ASCII_SPACE) {
+                current_game.on_goal = false;
+            }
         }
         else {
             draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
+            if (next_square == MY_SOK_GOAL) {
+                current_game.on_goal = true;
+            }
         }
-        draw_char(new_row, new_col, MY_SOK_PLAYER, PLAYER_COLOR);
-        current_game.level_moves++;
-        current_game.curr_row = new_row;
-        current_game.curr_col = new_col;
-    }
-    else if (next_square == MY_SOK_GOAL) {
-        if (current_game.on_goal) {
-            draw_char(row, col, MY_SOK_GOAL, GOAL_COLOR);
-        }
-        else {
-            draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
-            current_game.on_goal = true;
-        }
+
         draw_char(new_row, new_col, MY_SOK_PLAYER, PLAYER_COLOR);
         current_game.level_moves++;
         current_game.curr_row = new_row;
@@ -477,17 +470,23 @@ void try_move(char ch)
 
 void handle_input(char ch)
 {
-    if (sokoban.state == LEVEL_RUNNING && current_game.game_state == IN_LEVEL_SUMMARY) {
-        level_up();
-        return;
-    }
+    sokoban_state_t state = sokoban.state;
 
-    switch (ch) {
-        case 'i':
-            if (sokoban.state == INTRODUCTION) {
+    if (state == INTRODUCTION) {
+        switch (ch) {
+            case 'i':
                 display_instructions();
-            }
-            else if (sokoban.state == INSTRUCTIONS) {
+                break;
+            case '\n':
+                start_game();
+                break;
+            default:
+                return;
+        }
+    }
+    else if (state == INSTRUCTIONS) {
+        switch (ch) {
+            case 'i':
                 if (sokoban.previous_state == INTRODUCTION) {
                     display_introduction();
                 }
@@ -497,56 +496,53 @@ void handle_input(char ch)
                     sokoban.state = LEVEL_RUNNING;
                     current_game.game_state = RUNNING;
                 }
+                break;
+            default:
+                return;
+        }
+    }
+    else if (state == LEVEL_RUNNING) {
+        game_state_t game_state = current_game.game_state;
+
+        if (game_state == IN_LEVEL_SUMMARY) {
+            level_up();
+        }
+        else if (game_state == PAUSED) {
+            if (ch == 'p') {
+                memcpy((void*)CONSOLE_MEM_BASE, (void*)saved_screen, CONSOLE_SIZE);
+                current_game.game_state = RUNNING;
             }
-            else if (sokoban.state == LEVEL_RUNNING) {
-                if (current_game.game_state == RUNNING) {
-                    current_game.game_state = PAUSED;
+        }
+        else if (game_state == RUNNING) {
+            switch (ch) {
+                case 'i':
                     memcpy((void*)saved_screen, (void*)CONSOLE_MEM_BASE, CONSOLE_SIZE);
                     display_instructions();
-                }
-            }
-            break;
-        case '\n':
-            if (sokoban.state == INTRODUCTION) {
-               start_game(); 
-            }
-            break;
-        case 'p':
-            if (sokoban.state == LEVEL_RUNNING) {
-                if (current_game.game_state == RUNNING) {
+                    break;
+                case 'p':
                     memcpy((void*)saved_screen, (void*)CONSOLE_MEM_BASE, CONSOLE_SIZE);
                     pause_game();
-                }
-                else if (current_game.game_state == PAUSED) {
-                    memcpy((void*)CONSOLE_MEM_BASE, (void*)saved_screen, CONSOLE_SIZE);
-                    current_game.game_state = RUNNING;
-                }
+                    break;
+                case 'q':
+                    quit_game();
+                    break;
+                case 'r':
+                    restart_current_level();
+                    break;
+                case 'w':
+                case 'a':
+                case 's':
+                case 'd':
+                case 'h':
+                case 'j':
+                case 'k':
+                case 'l':
+                    try_move(ch);
+                    break;
+                default:
+                    break;
             }
-            break;
-        case 'q':
-            if (sokoban.state == LEVEL_RUNNING && current_game.game_state == RUNNING) {
-                quit_game();
-            }
-            break;
-        case 'r':
-            if (sokoban.state == LEVEL_RUNNING && current_game.game_state == RUNNING) {
-                restart_current_level();
-            }
-            break;
-        case 'w':
-        case 'a':
-        case 's':
-        case 'd':
-        case 'h':
-        case 'j':
-        case 'k':
-        case 'l':
-            if (sokoban.state == LEVEL_RUNNING && current_game.game_state == RUNNING) {
-                try_move(ch);
-            }
-            break;
-        default:
-            break;
+        }
     }
 }
 
