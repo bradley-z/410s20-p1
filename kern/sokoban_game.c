@@ -66,9 +66,10 @@ const char *level_complete_messages[] = {
 const char *instructions[] = {
     "0. You are represented by '@', boxes by 'o', and target locations by 'x'",
     "1. Use WASD to move the player onto empty squares",
-    "2. There is an equal number of boxes and target locations",
+    "2. You can push boxes onto empty squares and target locations",
     "3. Boxes cannot be pulled, or pushed into other boxes or walls",
-    "4. Push teach box into its own target location complete the level",
+    "4. There is an equal number of boxes and target locations",
+    "5. Push each box into its own target location to complete the level",
 };
 
 game_t current_game;
