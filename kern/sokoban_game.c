@@ -117,8 +117,8 @@ void start_sokoban_level(int level_number)
     sokoban.state = LEVEL_RUNNING;
 
     current_game.level_ticks = 0;
-    // current_game.level = soko_levels[level_number - 1];
-    current_game.level = soko_levels[0];
+    current_game.level = soko_levels[level_number - 1];
+    // current_game.level = soko_levels[0];
     current_game.level_number = level_number;
 
     restart_current_level();
@@ -642,7 +642,7 @@ void display_instructions()
 
     int row = 7;
     int i;
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < 6; i++) {
         putstring(instructions[i], row, 3, DEFAULT_COLOR);
         row += 2;
     }
