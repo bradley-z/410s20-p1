@@ -58,6 +58,7 @@ typedef struct {
 } sokoban_t;
 
 void sokoban_tickback(unsigned int numTicks);
+void put_time_at_loc(int ticks, int row, int col);
 void putstring(const char *str, int row, int col, int color);
 void start_sokoban_level(int level_number);
 level_info_t draw_sokoban_level(sokolevel_t *level);

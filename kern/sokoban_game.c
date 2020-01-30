@@ -78,6 +78,15 @@ sokoban_t sokoban;
 // TODO: why is my timer half speed
 // TODO: clean up code
 
+void put_time_at_loc(int ticks, int row, int col)
+{
+    int len = snprintf(timer_print_buf, CONSOLE_WIDTH, "%d", ticks);
+    timer_print_buf[len + 1] = '\0';
+    timer_print_buf[len] = timer_print_buf[len - 1];
+    timer_print_buf[len - 1] = '.';
+    putstring(timer_print_buf, row, col, DEFAULT_COLOR);
+}
+
 void sokoban_tickback(unsigned int numTicks)
 {
     if (sokoban.state != LEVEL_RUNNING) {
@@ -204,12 +213,7 @@ void print_current_game_moves()
 
 void print_current_game_time()
 {
-    // TODO: pull this shit out into another function
-    int len = snprintf(timer_print_buf, CONSOLE_WIDTH, "%d", current_game.level_ticks / 10);
-    timer_print_buf[len + 1] = '\0';
-    timer_print_buf[len] = timer_print_buf[len - 1];
-    timer_print_buf[len - 1] = '.';
-    putstring(timer_print_buf, 4, 10, DEFAULT_COLOR);
+    put_time_at_loc(current_game.level_ticks / 10, 4, 10);
 }
 
 void complete_level()
@@ -233,11 +237,8 @@ void complete_level()
         set_cursor(13, 35);
         printf("Moves: %d", current_game.level_moves);
 
-        int len = snprintf(timer_print_buf, CONSOLE_WIDTH, "Time: %d", current_game.level_ticks / 10);
-        timer_print_buf[len + 1] = '\0';
-        timer_print_buf[len] = timer_print_buf[len - 1];
-        timer_print_buf[len - 1] = '.';
-        putstring(timer_print_buf, 14, 35, DEFAULT_COLOR);
+        putstring("Time: ", 14, 35, DEFAULT_COLOR);
+        put_time_at_loc(current_game.level_ticks / 10, 14, 41);
     }
 }
 
@@ -587,12 +588,8 @@ void complete_game()
     set_term_color(DEFAULT_COLOR);
     set_cursor(13, 32);
     printf("Total moves: %d", current_game.total_moves);
-    set_cursor(14, 32);
-    int len = snprintf(timer_print_buf, CONSOLE_WIDTH, "Total time: %u", current_game.total_ticks / 10);
-    timer_print_buf[len + 1] = '\0';
-    timer_print_buf[len] = timer_print_buf[len - 1];
-    timer_print_buf[len - 1] = '.';
-    putstring(timer_print_buf, 14, 32, DEFAULT_COLOR);
+    putstring("Total time: ", 14, 32, DEFAULT_COLOR);
+    put_time_at_loc(current_game.total_ticks / 10, 14, 44);
 }
 
 void quit_game()
@@ -659,8 +656,6 @@ void display_introduction()
     draw_image(15, 9, 7, 13, FGND_BRWN | BGND_BLACK, ascii_left_box);
     draw_image(15, 58, 7, 12, FGND_BRWN | BGND_BLACK, ascii_right_box);
 
-    int buf_len;
-
     set_term_color(DEFAULT_COLOR);
     putstring("Highscores:", 15, 34, DEFAULT_COLOR);
     if (sokoban.hiscores[0].num_moves == UINT32_MAX) {
@@ -670,11 +665,8 @@ void display_introduction()
     else {
         set_cursor(16, 30);
         printf("1 - Moves: %u", sokoban.hiscores[0].num_moves);
-        buf_len = snprintf(timer_print_buf, CONSOLE_WIDTH, "Time: %u", sokoban.hiscores[0].num_ticks);
-        timer_print_buf[buf_len + 1] = '\0';
-        timer_print_buf[buf_len] = timer_print_buf[buf_len - 1];
-        timer_print_buf[buf_len - 1] = '.';
-        putstring(timer_print_buf, 17, 34, DEFAULT_COLOR);
+        putstring("Time: ", 17, 34, DEFAULT_COLOR);
+        put_time_at_loc(sokoban.hiscores[0].num_ticks, 17, 40);
     }
 
     if (sokoban.hiscores[1].num_moves == UINT32_MAX) {
@@ -684,12 +676,8 @@ void display_introduction()
     else {
         set_cursor(18, 30);
         printf("2 - Moves: %u", sokoban.hiscores[1].num_moves);
-
-        buf_len = snprintf(timer_print_buf, CONSOLE_WIDTH, "Time: %u", sokoban.hiscores[1].num_ticks);
-        timer_print_buf[buf_len + 1] = '\0';
-        timer_print_buf[buf_len] = timer_print_buf[buf_len - 1];
-        timer_print_buf[buf_len - 1] = '.';
-        putstring(timer_print_buf, 19, 34, DEFAULT_COLOR);
+        putstring("Time: ", 19, 34, DEFAULT_COLOR);
+        put_time_at_loc(sokoban.hiscores[1].num_ticks, 19, 40);
     }
 
     if (sokoban.hiscores[2].num_moves == UINT32_MAX) {
@@ -699,12 +687,8 @@ void display_introduction()
     else {
         set_cursor(20, 30);
         printf("3 - Moves: %u", sokoban.hiscores[2].num_moves);
-
-        buf_len = snprintf(timer_print_buf, CONSOLE_WIDTH, "Time: %u", sokoban.hiscores[2].num_ticks);
-        timer_print_buf[buf_len + 1] = '\0';
-        timer_print_buf[buf_len] = timer_print_buf[buf_len - 1];
-        timer_print_buf[buf_len - 1] = '.';
-        putstring(timer_print_buf, 21, 34, DEFAULT_COLOR);
+        putstring("Time: ", 21, 34, DEFAULT_COLOR);
+        put_time_at_loc(sokoban.hiscores[2].num_ticks, 21, 40);
     }
 }
 
