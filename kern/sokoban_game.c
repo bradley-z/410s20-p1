@@ -8,11 +8,11 @@
 
 #define ASCII_SPACE 0x20
 
-#define MY_SOK_WALL   ((char)0xB0)
-#define MY_SOK_PLAYER ('@')
-#define MY_SOK_BOX    ('o')
-#define MY_SOK_GOAL   ('x')
-#define MY_SOK_BOX_ON_GOAL ('O')
+#define MY_SOK_WALL         ((char)0xB0)
+#define MY_SOK_PLAYER       ('@')
+#define MY_SOK_BOX          ('o')
+#define MY_SOK_GOAL         ('x')
+#define MY_SOK_BOX_ON_GOAL  ('O')
 
 #define DEFAULT_COLOR (FGND_WHITE | BGND_BLACK)
 #define PLAYER_COLOR (FGND_BCYAN | BGND_BLACK)
@@ -35,6 +35,7 @@ const char *intro_screen_message = "Press 'i' for instructions or 'enter' to sta
 const char *game_screen_message = "Press 'i' for instructions, 'p' to pause, 'r' to restart, or 'q' to quit";
 const char *summary_screen_message = "Press any key to continue";
 const char *game_complete_message = "Press any key to return to introduction screen";
+const char *pause_screen_message = "Press 'p' to unpause";
 const char *ascii_left_box = "\
     .+------+\
   .' |    .'|\
@@ -52,17 +53,30 @@ const char *ascii_right_box = "\
  `. |   `. |\
    `+------+";
 
-const char *level_complete_messages[] ={
+const char *level_complete_messages[] = {
     "Phase 1 defused. How about the next one?",
-    "That's number 2.  Keep going!",
+    "That's number 2. Keep going!",
     "Halfway there!",
-    "So you got that one.  Try this one.",
-    "Good work!  On to the next...",
+    "So you got that one. Try this one.",
+    "Good work! On to the next...",
     "Congratulations! You've defused the bomb! Wait... wrong class...",
+};
+
+const char *instructions[] = {
+    "0. You are represented by '@', boxes by 'o', and target locations by 'x'",
+    "1. Use WASD to move the player onto empty squares",
+    "2. There is an equal number of boxes and storage locations",
+    "3. Boxes cannot be pulled, or pushed into other boxes or walls",
+    "4. Push all boxes into a storage location to complete the level",
 };
 
 game_t current_game;
 sokoban_t sokoban;
+
+// TODO: why is my timer half speed
+// TODO: better instructions/pause screen
+// TODO: try to print tickbacks in .1 increments
+// TODO: clean up code
 
 void sokoban_tickback(unsigned int numTicks)
 {
@@ -78,12 +92,33 @@ void sokoban_tickback(unsigned int numTicks)
     } 
 }
 
+void putstring(const char *str, int row, int col, int color)
+{
+    if (str == NULL) {
+        return;
+    }
+
+    int old_color;
+    get_term_color(&old_color);
+
+    set_term_color(color);
+    set_cursor(row, col);
+
+    while (*str != '\0') {
+        putbyte(*str);
+        str++;
+    }
+
+    set_term_color(old_color);
+}
+
 void start_sokoban_level(int level_number)
 {
     sokoban.state = LEVEL_RUNNING;
 
     current_game.level_ticks = 0;
     current_game.level = soko_levels[level_number - 1];
+    // current_game.level = soko_levels[0];
     current_game.level_number = level_number;
 
     restart_current_level();
@@ -152,8 +187,9 @@ level_info_t draw_sokoban_level(sokolevel_t *level)
     }
 
     int message_row = CONSOLE_HEIGHT - ((CONSOLE_HEIGHT - curr_row) / 2) - 1;
-    set_cursor(message_row, 4);
-    printf(game_screen_message);
+    putstring(game_screen_message, message_row, 4, DEFAULT_COLOR);
+    putstring("Moves: ", 3, 4, DEFAULT_COLOR);
+    putstring("Time: ", 4, 4, DEFAULT_COLOR);
     print_current_game_moves();
     print_current_game_time();
 
@@ -163,14 +199,14 @@ level_info_t draw_sokoban_level(sokolevel_t *level)
 // TODO: optimize these two by preprinting Moves: and Time:
 void print_current_game_moves()
 {
-    set_cursor(3, 4);
-    printf("Moves: %d", current_game.level_moves);
+    set_cursor(3, 11);
+    printf("%d", current_game.level_moves);
 }
 
 void print_current_game_time()
 {
-    set_cursor(4, 4);
-    printf("Time: %d", current_game.level_ticks / 100);
+    set_cursor(4, 10);
+    printf("%d", current_game.level_ticks / 100);
 }
 
 void complete_level()
@@ -186,13 +222,9 @@ void complete_level()
         clear_console();
         const char *msg = level_complete_messages[current_game.level_number - 1];
         int msg_len = strlen(msg);
-        set_term_color(FGND_YLLW | BGND_BLACK);
-        set_cursor(11, (CONSOLE_WIDTH - msg_len) / 2);
-        putbytes(msg, msg_len);
 
-        set_term_color(FGND_BBLUE | BGND_BLACK);
-        set_cursor(19, 27);
-        putbytes(summary_screen_message, 25);
+        putstring(msg, 11, (CONSOLE_WIDTH - msg_len) / 2, (FGND_YLLW | BGND_BLACK));
+        putstring(summary_screen_message, 19, 27, (FGND_MAG | BGND_BLACK));
 
         set_term_color(DEFAULT_COLOR);
         set_cursor(13, 35);
@@ -523,8 +555,6 @@ void level_up()
 
 void complete_game()
 {
-    // save the moves and seconds and compare to hiscores, insert into hiscores
-    // display congrats screen, total moves and time
     score_t score = { current_game.total_moves, current_game.total_ticks / 100 };
 
     int i;
@@ -532,7 +562,7 @@ void complete_game()
         if (score.num_moves < sokoban.hiscores[i].num_moves ||
            (score.num_moves == sokoban.hiscores[i].num_moves && score.time_seconds < sokoban.hiscores[i].time_seconds)) {
             int j;
-            for (j = i + 1; j < 3; j++) {
+            for (j = 2; j > i; j--) {
                 sokoban.hiscores[j] = sokoban.hiscores[j - 1];
             }
             sokoban.hiscores[i] = score;
@@ -543,13 +573,9 @@ void complete_game()
     clear_console();
     const char *msg = level_complete_messages[current_game.level_number - 1];
     int msg_len = strlen(msg);
-    set_term_color(FGND_YLLW | BGND_BLACK);
-    set_cursor(11, (CONSOLE_WIDTH - msg_len) / 2);
-    putbytes(msg, msg_len);
 
-    set_term_color(FGND_BBLUE | BGND_BLACK);
-    set_cursor(19, 17);
-    putbytes(game_complete_message, 46);
+    putstring(msg, 11, (CONSOLE_WIDTH - msg_len) / 2, FGND_YLLW | BGND_BLACK);
+    putstring(game_complete_message, 19, 17, FGND_MAG | BGND_BLACK);
 
     set_term_color(DEFAULT_COLOR);
     set_cursor(13, 32);
@@ -582,8 +608,7 @@ void pause_game()
 {
     current_game.game_state = PAUSED;
     clear_console();
-
-    printf("Paused!\n\nPress 'p' to unpause");
+    putstring(pause_screen_message, 12, 30, DEFAULT_COLOR);
 }
 
 void start_game()
@@ -601,7 +626,15 @@ void display_instructions()
     sokoban.previous_state = sokoban.state;
     sokoban.state = INSTRUCTIONS;
     clear_console();
-    printf("Instructions!\n\nPress 'i' to return");
+    putstring("Instructions", 4, 34, FGND_YLLW | BGND_BLACK);
+    putstring("Press 'i' to return", 20, 31, FGND_MAG | BGND_BLACK);
+
+    int row = 7;
+    int i;
+    for (i = 0; i < 5; i++) {
+        putstring(instructions[i], row, 3, DEFAULT_COLOR);
+        row += 2;
+    }
 }
 
 void display_introduction()
@@ -610,14 +643,13 @@ void display_introduction()
     sokoban.state = INTRODUCTION;
     clear_console();
     draw_image(2, 18, 6, 43, FGND_YLLW | BGND_BLACK, ascii_sokoban);
-    draw_image(9, 28, 1, 23, FGND_BBLUE | BGND_BLACK, name);
+    draw_image(9, 28, 1, 23, FGND_MAG | BGND_BLACK, name);
     draw_image(11, 17, 1, 46, DEFAULT_COLOR, intro_screen_message);
     draw_image(15, 9, 7, 13, FGND_BRWN | BGND_BLACK, ascii_left_box);
     draw_image(15, 58, 7, 12, FGND_BRWN | BGND_BLACK, ascii_right_box);
 
-    set_cursor(15, 34);
     set_term_color(DEFAULT_COLOR);
-    printf("Highscores:\n");
+    putstring("Highscores:\n", 15, 34, DEFAULT_COLOR);
     set_cursor(16, 30);
     printf("1 - Moves: %u\n", sokoban.hiscores[0].num_moves);
     set_cursor(17, 30);
