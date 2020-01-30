@@ -48,7 +48,7 @@ typedef struct {
 
 typedef struct {
     unsigned int num_moves;
-    unsigned int time_seconds;
+    unsigned int num_ticks;
 } score_t;
 
 typedef struct {
