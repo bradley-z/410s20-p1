@@ -242,10 +242,32 @@ void complete_level()
     }
 }
 
-void try_move(dir_t dir)
+void try_move(char ch)
 {
     int row = current_game.curr_row;
     int col = current_game.curr_col;
+
+    dir_t dir;
+    switch (ch) {
+        case 'w':
+        case 'k':
+            dir = UP;
+            break;
+        case 's':
+        case 'j':
+            dir = DOWN;
+            break;
+        case 'a':
+        case 'h':
+            dir = LEFT;
+            break;
+        case 'd':
+        case 'l':
+            dir = RIGHT;
+            break;
+        default:
+            return;
+    }
 
     int new_row, new_col;
 
@@ -477,9 +499,11 @@ void handle_input(char ch)
                 }
             }
             else if (sokoban.state == LEVEL_RUNNING) {
-                current_game.game_state = PAUSED;
-                memcpy((void*)saved_screen, (void*)CONSOLE_MEM_BASE, CONSOLE_SIZE);
-                display_instructions();
+                if (current_game.game_state == RUNNING) {
+                    current_game.game_state = PAUSED;
+                    memcpy((void*)saved_screen, (void*)CONSOLE_MEM_BASE, CONSOLE_SIZE);
+                    display_instructions();
+                }
             }
             break;
         case '\n':
@@ -510,23 +534,15 @@ void handle_input(char ch)
             }
             break;
         case 'w':
-            if (sokoban.state == LEVEL_RUNNING && current_game.game_state == RUNNING) {
-                try_move(UP);
-            }
-            break;
-        case 's':
-            if (sokoban.state == LEVEL_RUNNING && current_game.game_state == RUNNING) {
-                try_move(DOWN);
-            }
-            break;
         case 'a':
-            if (sokoban.state == LEVEL_RUNNING && current_game.game_state == RUNNING) {
-                try_move(LEFT);
-            }
-            break;
+        case 's':
         case 'd':
+        case 'h':
+        case 'j':
+        case 'k':
+        case 'l':
             if (sokoban.state == LEVEL_RUNNING && current_game.game_state == RUNNING) {
-                try_move(RIGHT);
+                try_move(ch);
             }
             break;
         default:

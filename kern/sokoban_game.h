@@ -65,7 +65,7 @@ level_info_t draw_sokoban_level(sokolevel_t *level);
 void print_current_game_moves(void);
 void print_current_game_time(void);
 void complete_level(void);
-void try_move(dir_t dir);
+void try_move(char ch);
 void handle_input(char ch);
 void draw_image(int start_row, int start_col,
                 int height, int width,
