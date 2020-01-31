@@ -242,6 +242,45 @@ void complete_level()
     }
 }
 
+bool valid_next_square(dir_t dir, int row, int col,
+                       int *new_row, int *new_col)
+{
+    switch (dir) {
+        case UP:
+            if (row - 1 < 0) {
+                return false;
+            }
+            *new_row = row - 1;
+            *new_col = col;
+            break;
+        case DOWN:
+            if (row + 1 >= CONSOLE_HEIGHT) {
+                return false;
+            }
+            *new_row = row + 1;
+            *new_col = col;
+            break;
+        case LEFT:
+            if (col - 1 < 0) {
+                return false;
+            }
+            *new_row = row;
+            *new_col = col - 1;
+            break;
+        case RIGHT:
+            if (col + 1 >= CONSOLE_WIDTH - 1) {
+                return false;
+            }
+            *new_row = row;
+            *new_col = col + 1;
+            break;
+        default:
+            return false;
+    }
+
+    return true;
+}
+
 void try_move(char ch)
 {
     int row = current_game.curr_row;
@@ -270,37 +309,8 @@ void try_move(char ch)
     }
 
     int new_row, new_col;
-    switch (dir) {
-        case UP:
-            if (row - 1 < 0) {
-                return;
-            }
-            new_row = row - 1;
-            new_col = col;
-            break;
-        case DOWN:
-            if (row + 1 >= CONSOLE_HEIGHT) {
-                return;
-            }
-            new_row = row + 1;
-            new_col = col;
-            break;
-        case LEFT:
-            if (col - 1 < 0) {
-                return;
-            }
-            new_row = row;
-            new_col = col - 1;
-            break;
-        case RIGHT:
-            if (col + 1 >= CONSOLE_WIDTH - 1) {
-                return;
-            }
-            new_row = row;
-            new_col = col + 1;
-            break;
-        default:
-            return;
+    if (!valid_next_square(dir, row, col, &new_row, &new_col)) {
+        return;
     }
 
     char next_square = get_char(new_row, new_col);
@@ -328,38 +338,9 @@ void try_move(char ch)
     }
     else if (pushable) {
         int next_next_square_row, next_next_square_col;
-
-        switch (dir) {
-            case UP:
-                if (row - 2 < 0) {
-                    return;
-                }
-                next_next_square_row = row - 2;
-                next_next_square_col = col;
-                break;
-            case DOWN:
-                if (row + 2 >= CONSOLE_HEIGHT) {
-                    return;
-                }
-                next_next_square_row = row + 2;
-                next_next_square_col = col;
-                break;
-            case LEFT:
-                if (col - 2 < 0) {
-                    return;
-                }
-                next_next_square_row = row;
-                next_next_square_col = col - 2;
-                break;
-            case RIGHT:
-                if (col + 2 >= CONSOLE_WIDTH) {
-                    return;
-                }
-                next_next_square_row = row;
-                next_next_square_col = col + 2;
-                break;
-            default:
-                return;
+        if (!valid_next_square(dir, new_row, new_col,
+                               &next_next_square_row, &next_next_square_col)) {
+            return;
         }
 
         char next_next_square = get_char(next_next_square_row, next_next_square_col);
