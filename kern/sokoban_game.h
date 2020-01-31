@@ -4,6 +4,8 @@
 #include <sokoban.h>
 #include <stdbool.h>
 
+#define NUM_HIGHSCORES 3
+
 typedef enum {
     TOP_SIDE,
     BOTTOM_SIDE,
@@ -53,7 +55,7 @@ typedef struct {
 } score_t;
 
 typedef struct {
-    score_t hiscores[3];
+    score_t hiscores[NUM_HIGHSCORES];
     sokoban_state_t state;
     sokoban_state_t previous_state;
 } sokoban_t;

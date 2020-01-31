@@ -15,7 +15,11 @@
 #define MY_SOK_GOAL         ('x')
 #define MY_SOK_BOX_ON_GOAL  ('O')
 
+#define MAIN_COLOR          (FGND_YLLW | BGND_BLACK)
+#define ACCENT_COLOR        (FGND_MAG | BGND_BLACK)
+
 #define DEFAULT_COLOR       (FGND_WHITE | BGND_BLACK)
+#define WALL_COLOR          (FGND_DGRAY | BGND_BLACK)
 #define PLAYER_COLOR        (FGND_BCYAN | BGND_BLACK)
 #define BOX_COLOR           (FGND_BRWN | BGND_BLACK)
 #define GOAL_COLOR          (FGND_YLLW | BGND_BLACK)
@@ -237,23 +241,23 @@ static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
 
         switch (ch) {
             case (SOK_WALL):
-                color = FGND_DGRAY | BGND_BLACK;
+                color = WALL_COLOR;
                 ch = MY_SOK_WALL;
                 break;
             case (SOK_PUSH):
                 *start_row = curr_row;
                 *start_col = curr_col;
-                color = FGND_BCYAN | BGND_BLACK;
+                color = PLAYER_COLOR;
                 ch = MY_SOK_PLAYER;
                 found_start = true;
                 break;
             case (SOK_ROCK):
                 num_boxes++;
-                color = FGND_BRWN | BGND_BLACK;
+                color = BOX_COLOR;
                 ch = MY_SOK_BOX;
                 break;
             case (SOK_GOAL):
-                color = FGND_YLLW | BGND_BLACK;
+                color = GOAL_COLOR;
                 ch = MY_SOK_GOAL;
                 break;
             default:
@@ -567,12 +571,12 @@ static void complete_game()
     score_t score = { current_game.total_moves, current_game.total_ticks };
 
     int i;
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < NUM_HIGHSCORES; i++) {
         if (score.num_moves < sokoban.hiscores[i].num_moves ||
            (score.num_moves == sokoban.hiscores[i].num_moves &&
             score.num_ticks < sokoban.hiscores[i].num_ticks)) {
             int j;
-            for (j = 2; j > i; j--) {
+            for (j = (NUM_HIGHSCORES - 1); j > i; j--) {
                 sokoban.hiscores[j] = sokoban.hiscores[j - 1];
             }
             sokoban.hiscores[i] = score;
@@ -584,8 +588,8 @@ static void complete_game()
     const char *msg = end_level_messages[current_game.level_number - 1];
     int msg_len = strlen(msg);
 
-    putstring(msg, 11, (CONSOLE_WIDTH - msg_len) / 2, FGND_YLLW | BGND_BLACK);
-    putstring(game_complete_message, 19, 17, FGND_MAG | BGND_BLACK);
+    putstring(msg, 11, (CONSOLE_WIDTH - msg_len) / 2, MAIN_COLOR);
+    putstring(game_complete_message, 19, 17, ACCENT_COLOR);
 
     set_term_color(DEFAULT_COLOR);
     set_cursor(13, 32);
@@ -609,8 +613,8 @@ static void complete_level()
         int msg_len = strlen(msg);
 
         putstring(msg, 11,
-                  (CONSOLE_WIDTH - msg_len) / 2, (FGND_YLLW | BGND_BLACK));
-        putstring(summary_screen_message, 19, 27, (FGND_MAG | BGND_BLACK));
+                  (CONSOLE_WIDTH - msg_len) / 2, MAIN_COLOR);
+        putstring(summary_screen_message, 19, 27, ACCENT_COLOR);
 
         set_term_color(DEFAULT_COLOR);
         set_cursor(13, 35);
@@ -630,7 +634,10 @@ static void pause_game()
 {
     current_game.game_state = PAUSED;
     clear_console();
-    putstring(pause_screen_message, 12, 30, DEFAULT_COLOR);
+    putstring(pause_screen_message,
+              align_row(TOP_SIDE, STRING_HEIGHT, ALIGNMENT_HALF),
+              align_col(CENTER, strlen(pause_screen_message), ALIGNMENT_HALF),
+              DEFAULT_COLOR);
 }
 
 static void restart_current_level()
@@ -683,11 +690,11 @@ static void display_instructions()
     putstring(ins_str,
               align_row(TOP_SIDE, STRING_HEIGHT, ALIGNMENT_EIGHT),
               align_col(CENTER, strlen(ins_str), ALIGNMENT_HALF),
-              FGND_YLLW | BGND_BLACK);
+              MAIN_COLOR);
     putstring(ret_str,
               align_row(BOTTOM_SIDE, STRING_HEIGHT, ALIGNMENT_TENTH),
               align_col(CENTER, strlen(ret_str), ALIGNMENT_HALF),
-              FGND_MAG | BGND_BLACK);
+              ACCENT_COLOR);
 
     int row = align_row(TOP_SIDE, STRING_HEIGHT, ALIGNMENT_QUARTER);
     int col = align_col(LEFT_SIDE, strlen(ins_str), ALIGNMENT_TWENTYTH);
@@ -711,13 +718,13 @@ static void display_introduction()
     curr_draw_row = align_row(TOP_SIDE, ASCII_SOKO_HEIGHT, ALIGNMENT_TWELFTH);
     curr_draw_col = align_col(CENTER, ASCII_SOKO_WIDTH, ALIGNMENT_HALF);
     draw_image(ascii_sokoban, curr_draw_row, curr_draw_col,
-               ASCII_SOKO_HEIGHT, ASCII_SOKO_WIDTH, FGND_YLLW | BGND_BLACK);
+               ASCII_SOKO_HEIGHT, ASCII_SOKO_WIDTH, MAIN_COLOR);
 
     /* draw the author name below the ascii sokoban logo */
     curr_draw_row += (ASCII_SOKO_HEIGHT + ELEMENT_ROW_SPACING);
     curr_draw_col = align_col(CENTER, strlen(name), ALIGNMENT_HALF);
     draw_image(name, curr_draw_row, curr_draw_col,
-               STRING_HEIGHT, strlen(name), FGND_MAG | BGND_BLACK);
+               STRING_HEIGHT, strlen(name), ACCENT_COLOR);
 
     /* draw the start message below the author */
     curr_draw_row += (STRING_HEIGHT + ELEMENT_ROW_SPACING);
@@ -732,7 +739,7 @@ static void display_introduction()
     curr_draw_col = align_col(LEFT_SIDE, ASCII_LBOX_WIDTH,
                                    (ALIGNMENT_TENTH));
     draw_image(ascii_left_box, curr_draw_row, curr_draw_col,
-               ASCII_LBOX_HEIGHT, ASCII_LBOX_WIDTH, FGND_BRWN | BGND_BLACK);
+               ASCII_LBOX_HEIGHT, ASCII_LBOX_WIDTH, BOX_COLOR);
 
     /* draw the right ascii box 60% from the top and 10% from the right */
     curr_draw_row = align_row(TOP_SIDE, ASCII_RBOX_HEIGHT,
@@ -740,67 +747,43 @@ static void display_introduction()
     curr_draw_col = align_col(RIGHT_SIDE, ASCII_RBOX_WIDTH,
                                    (ALIGNMENT_TENTH));
     draw_image(ascii_right_box, curr_draw_row, curr_draw_col,
-               ASCII_RBOX_HEIGHT, ASCII_RBOX_WIDTH, FGND_BRWN | BGND_BLACK);
+               ASCII_RBOX_HEIGHT, ASCII_RBOX_WIDTH, BOX_COLOR);
 
-    /* start drawing high scores at halfway from the top */
+    /* draw highscores wording in line with top of the boxes */
     curr_draw_col = align_col(CENTER, strlen("Highscores:"), ALIGNMENT_HALF);
     set_term_color(DEFAULT_COLOR);
     putstring("Highscores:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
+
+    /* start drawing the actual highscores right under that */
     curr_draw_row += ELEMENT_ROW_SPACING;
-    curr_draw_col = align_col(LEFT_SIDE, strlen("1 - Moves:"),
+    curr_draw_col = align_col(LEFT_SIDE, strlen("x - Moves:"),
                               ALIGNMENT_3EIGHTS);
     int time_draw_col = curr_draw_col + strlen("    Time: ");
-    if (sokoban.hiscores[0].num_moves == UINT32_MAX) {
-        putstring("1 - Moves:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
-        curr_draw_row += ELEMENT_ROW_SPACING;
-        putstring("    Time:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
-    }
-    else {
+    int i;
+    for (i = 0; i < NUM_HIGHSCORES; i++) {
         set_cursor(curr_draw_row, curr_draw_col);
-        printf("1 - Moves: %u", sokoban.hiscores[0].num_moves);
+        printf("%d - Moves: ", i + 1);
+        if (sokoban.hiscores[i].num_moves != UINT32_MAX) {
+            printf("%u", sokoban.hiscores[i].num_moves);
+        }
         curr_draw_row += ELEMENT_ROW_SPACING;
         putstring("    Time: ", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
-        put_time_at_loc(sokoban.hiscores[0].num_ticks,
-                        curr_draw_row, time_draw_col);
-    }
-
-    curr_draw_row += ELEMENT_ROW_SPACING;
-    if (sokoban.hiscores[1].num_moves == UINT32_MAX) {
-        putstring("2 - Moves:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
+        if (sokoban.hiscores[i].num_ticks != UINT32_MAX) {
+            put_time_at_loc(sokoban.hiscores[i].num_ticks,
+                            curr_draw_row, time_draw_col);
+        }
         curr_draw_row += ELEMENT_ROW_SPACING;
-        putstring("    Time:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
-    }
-    else {
-        set_cursor(curr_draw_row, curr_draw_col);
-        printf("2 - Moves: %u", sokoban.hiscores[1].num_moves);
-        curr_draw_row += ELEMENT_ROW_SPACING;
-        putstring("    Time: ", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
-        put_time_at_loc(sokoban.hiscores[1].num_ticks,
-                        curr_draw_row, time_draw_col);
-    }
-
-    curr_draw_row += ELEMENT_ROW_SPACING;
-    if (sokoban.hiscores[2].num_moves == UINT32_MAX) {
-        putstring("3 - Moves:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
-        curr_draw_row += ELEMENT_ROW_SPACING;
-        putstring("    Time:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
-    }
-    else {
-        set_cursor(curr_draw_row, curr_draw_col);
-        printf("3 - Moves: %u", sokoban.hiscores[2].num_moves);
-        curr_draw_row += ELEMENT_ROW_SPACING;
-        putstring("    Time: ", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
-        put_time_at_loc(sokoban.hiscores[2].num_ticks,
-                        curr_draw_row, time_draw_col);
     }
 }
 
 void sokoban_initialize_and_run()
 {
     score_t default_score = { UINT32_MAX, UINT32_MAX };
-    sokoban.hiscores[0] = default_score;
-    sokoban.hiscores[1] = default_score;
-    sokoban.hiscores[2] = default_score;
+
+    int i;
+    for (i = 0; i < NUM_HIGHSCORES; i++) {
+        sokoban.hiscores[i] = default_score;
+    }
     sokoban.state = INTRODUCTION;
     sokoban.previous_state = INTRODUCTION;
 
