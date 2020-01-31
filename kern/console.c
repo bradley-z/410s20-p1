@@ -27,7 +27,7 @@ void scroll()
                              (2 * (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH));
     char *limit = last_row + (2 * CONSOLE_WIDTH);
     while (last_row < limit) {
-        last_row[0] = ' ';
+        last_row[0] = ASCII_SPACE;
         last_row += 2;
     }
 }
@@ -64,7 +64,6 @@ void write_char( char ch )
                 write_addr[0] = ASCII_SPACE;
                 write_addr[1] = console_color;
             }
-            // if console_row == 0, do nothing
         }
     }
     else {

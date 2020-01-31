@@ -68,13 +68,13 @@ const char *end_level_messages[] = {
 
 const char *instructions[] = {
     "0. You are represented by '@', boxes by 'o', and target locations by 'x'",
-    "1. Use WASD or HJKL to either move onto an empty square or to push a box",
+    "1. Use WASD or HJKL to either move onto an empty square or push a box",
     "2. You can push boxes onto empty squares and target locations",
     "3. Boxes cannot be pulled, or pushed into other boxes or walls",
     "4. There is an equal number of boxes and target locations",
     "5. Push each box into its own target location to complete the level",
     "6. Complete all six levels to complete the game",
-    NULL,
+    0,
 };
 
 game_t current_game;
@@ -119,6 +119,7 @@ bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
     if (total_boxes == NULL || start_row == NULL || start_col == NULL) {
         return false;
     }
+
     clear_console();
 
     set_cursor(1, 4);
@@ -182,6 +183,10 @@ bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
     }
     *total_boxes = num_boxes;
 
+    if (num_boxes == 0 || !found_start) {
+        return false;
+    }
+
     int message_row = CONSOLE_HEIGHT - ((CONSOLE_HEIGHT - curr_row) / 2) - 1;
     putstring(game_screen_message, message_row, 4, DEFAULT_COLOR);
     putstring("Moves: ", 3, 4, DEFAULT_COLOR);
@@ -189,16 +194,12 @@ bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
     print_current_game_moves();
     print_current_game_time();
 
-    if (num_boxes == 0 || !found_start) {
-        return false;
-    }
-
     return true;
 }
 
 void put_time_at_loc(int ticks, int row, int col)
 {
-    int len = snprintf(timer_print_buf, CONSOLE_WIDTH, "%d", ticks);
+    int len = snprintf(timer_print_buf, CONSOLE_WIDTH, "%d", ticks / 10);
     timer_print_buf[len + 1] = '\0';
     timer_print_buf[len] = timer_print_buf[len - 1];
     timer_print_buf[len - 1] = '.';
@@ -213,7 +214,7 @@ void print_current_game_moves()
 
 void print_current_game_time()
 {
-    put_time_at_loc(current_game.level_ticks / 10, 4, 10);
+    put_time_at_loc(current_game.level_ticks, 4, 10);
 }
 
 void putstring(const char *str, int row, int col, int color)
@@ -240,7 +241,7 @@ bool valid_next_square(dir_t dir, int row, int col,
                        int *new_row, int *new_col)
 {
     if (new_row == NULL || new_col == NULL) {
-        return true;
+        return false;
     }
 
     switch (dir) {
@@ -415,7 +416,6 @@ void handle_input(char ch)
                 else if (sokoban.previous_state == LEVEL_RUNNING) {
                     memcpy((void*)CONSOLE_MEM_BASE,
                            (void*)saved_screen, CONSOLE_SIZE);
-                    sokoban.previous_state = sokoban.state;
                     sokoban.state = LEVEL_RUNNING;
                     current_game.game_state = RUNNING;
                 }
@@ -512,7 +512,7 @@ void complete_game()
     set_cursor(13, 32);
     printf("Total moves: %d", current_game.total_moves);
     putstring("Total time: ", 14, 32, DEFAULT_COLOR);
-    put_time_at_loc(current_game.total_ticks / 10, 14, 44);
+    put_time_at_loc(current_game.total_ticks, 14, 44);
 }
 
 void complete_level()
@@ -538,7 +538,7 @@ void complete_level()
         printf("Moves: %d", current_game.level_moves);
 
         putstring("Time: ", 14, 35, DEFAULT_COLOR);
-        put_time_at_loc(current_game.level_ticks / 10, 14, 41);
+        put_time_at_loc(current_game.level_ticks, 14, 41);
     }
 }
 
@@ -587,8 +587,6 @@ void start_sokoban_level(int level_number)
 
 void start_game()
 {
-    sokoban.previous_state = sokoban.state;
-
     current_game.total_ticks = 0;
     current_game.total_moves = 0;
 
@@ -614,7 +612,6 @@ void display_instructions()
 
 void display_introduction()
 {
-    sokoban.previous_state = sokoban.state;
     sokoban.state = INTRODUCTION;
     clear_console();
     draw_image(ascii_sokoban, 2, 18, 6, 43, FGND_YLLW | BGND_BLACK);
@@ -633,7 +630,7 @@ void display_introduction()
         set_cursor(16, 30);
         printf("1 - Moves: %u", sokoban.hiscores[0].num_moves);
         putstring("Time: ", 17, 34, DEFAULT_COLOR);
-        put_time_at_loc(sokoban.hiscores[0].num_ticks / 10, 17, 40);
+        put_time_at_loc(sokoban.hiscores[0].num_ticks, 17, 40);
     }
 
     if (sokoban.hiscores[1].num_moves == UINT32_MAX) {
@@ -644,7 +641,7 @@ void display_introduction()
         set_cursor(18, 30);
         printf("2 - Moves: %u", sokoban.hiscores[1].num_moves);
         putstring("Time: ", 19, 34, DEFAULT_COLOR);
-        put_time_at_loc(sokoban.hiscores[1].num_ticks / 10, 19, 40);
+        put_time_at_loc(sokoban.hiscores[1].num_ticks, 19, 40);
     }
 
     if (sokoban.hiscores[2].num_moves == UINT32_MAX) {
@@ -655,7 +652,7 @@ void display_introduction()
         set_cursor(20, 30);
         printf("3 - Moves: %u", sokoban.hiscores[2].num_moves);
         putstring("Time: ", 21, 34, DEFAULT_COLOR);
-        put_time_at_loc(sokoban.hiscores[2].num_ticks / 10, 21, 40);
+        put_time_at_loc(sokoban.hiscores[2].num_ticks, 21, 40);
     }
 }
 
