@@ -7,6 +7,8 @@
 #include <stdio.h>          /* printf */
 #include <string.h>         /* memcpy */
 
+#define DEFAULT_SCORE       UINT32_MAX
+
 #define ASCII_SPACE         0x20
 
 #define MY_SOK_WALL         ((char)0xB0)
@@ -604,14 +606,14 @@ static void complete_level()
 
         int i;
         for (i = 0; i < NUM_HIGHSCORES; i++) {
-            if (score.num_moves < sokoban.hiscores[i].num_moves ||
-               (score.num_moves == sokoban.hiscores[i].num_moves &&
-                score.num_ticks < sokoban.hiscores[i].num_ticks)) {
+            if (score.num_moves < sokoban.highscores[i].num_moves ||
+               (score.num_moves == sokoban.highscores[i].num_moves &&
+                score.num_ticks < sokoban.highscores[i].num_ticks)) {
                 int j;
                 for (j = (NUM_HIGHSCORES - 1); j > i; j--) {
-                    sokoban.hiscores[j] = sokoban.hiscores[j - 1];
+                    sokoban.highscores[j] = sokoban.highscores[j - 1];
                 }
-                sokoban.hiscores[i] = score;
+                sokoban.highscores[i] = score;
                 break;
             }
         }
@@ -775,13 +777,13 @@ static void display_introduction()
     for (i = 0; i < NUM_HIGHSCORES; i++) {
         set_cursor(curr_draw_row, curr_draw_col);
         printf(moves_fmt, i + 1);
-        if (sokoban.hiscores[i].num_moves != UINT32_MAX) {
-            printf("%u", sokoban.hiscores[i].num_moves);
+        if (sokoban.highscores[i].num_moves != DEFAULT_SCORE) {
+            printf("%u", sokoban.highscores[i].num_moves);
         }
         curr_draw_row += ELEMENT_ROW_SPACING;
         putstring(time_str, curr_draw_row, curr_draw_col, DEFAULT_COLOR);
-        if (sokoban.hiscores[i].num_ticks != UINT32_MAX) {
-            put_time_at_loc(sokoban.hiscores[i].num_ticks,
+        if (sokoban.highscores[i].num_ticks != DEFAULT_SCORE) {
+            put_time_at_loc(sokoban.highscores[i].num_ticks,
                             curr_draw_row, time_draw_col);
         }
         curr_draw_row += ELEMENT_ROW_SPACING;
@@ -790,11 +792,11 @@ static void display_introduction()
 
 void sokoban_initialize_and_run()
 {
-    score_t default_score = { UINT32_MAX, UINT32_MAX };
+    score_t default_highscore = { DEFAULT_SCORE, DEFAULT_SCORE };
 
     int i;
     for (i = 0; i < NUM_HIGHSCORES; i++) {
-        sokoban.hiscores[i] = default_score;
+        sokoban.highscores[i] = default_highscore;
     }
     sokoban.state = INTRODUCTION;
     sokoban.previous_state = INTRODUCTION;

@@ -55,7 +55,7 @@ typedef struct {
 } score_t;
 
 typedef struct {
-    score_t hiscores[NUM_HIGHSCORES];
+    score_t highscores[NUM_HIGHSCORES];
     sokoban_state_t state;
     sokoban_state_t previous_state;
 } sokoban_t;
