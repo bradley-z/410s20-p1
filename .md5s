@@ -154,4 +154,4 @@
 644 5a57bdffcac34cce3e12999909155b69  spec/p1kern.h
 644 41dcf772a2add25270d72c1a199076b7  spec/syscall_int.h
 # finished on Fri Jan 24 12:55:41 EST 2020
-# Fetched by ./update.sh afs query at Fri Jan 31 12:23:49 EST 2020
+# Fetched by ./update.sh afs query at Fri Jan 31 15:06:55 EST 2020

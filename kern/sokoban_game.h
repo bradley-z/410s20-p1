@@ -5,6 +5,14 @@
 #include <stdbool.h>
 
 typedef enum {
+    TOP_SIDE,
+    BOTTOM_SIDE,
+    LEFT_SIDE,
+    RIGHT_SIDE,
+    CENTER,
+} alignment_t;
+
+typedef enum {
     UP,
     DOWN,
     LEFT,

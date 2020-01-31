@@ -1,12 +1,13 @@
 #include <sokoban_game.h>
 #include <p1kern.h>
 #include <sokoban.h>
+#include <stdbool.h>
 #include <stdint.h>         /* UINT32_MAX */
 #include <video_defines.h>  /* console size, color constants */
 #include <stdio.h>          /* printf */
 #include <string.h>         /* memcpy */
 
-#define ASCII_SPACE 0x20
+#define ASCII_SPACE         0x20
 
 #define MY_SOK_WALL         ((char)0xB0)
 #define MY_SOK_PLAYER       ('@')
@@ -20,9 +21,30 @@
 #define GOAL_COLOR          (FGND_YLLW | BGND_BLACK)
 #define BOX_ON_GOAL_COLOR   (FGND_GREEN | BGND_BLACK)
 
+#define ALIGNMENT_TWELFTH   8
+#define ALIGNMENT_TENTH     10
+#define ALIGNMENT_EIGHT     12
+#define ALIGNMENT_SIXTH     17
+#define ALIGNMENT_QUARTER   25
+#define ALIGNMENT_THIRD     33
+#define ALIGNMENT_3EIGHTS   38
+#define ALIGNMENT_HALF      50
+#define MAX_PERCENT         100
+
+#define ASCII_SOKO_HEIGHT   6
+#define ASCII_SOKO_WIDTH    43
+#define ASCII_LBOX_HEIGHT   7
+#define ASCII_LBOX_WIDTH    13
+#define ASCII_RBOX_HEIGHT   7
+#define ASCII_RBOX_WIDTH    12
+
+#define STRING_HEIGHT       1
+#define ELEMENT_ROW_SPACING 1
+
 #define CONSOLE_SIZE        (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH)
-char saved_screen[CONSOLE_SIZE];
-char timer_print_buf[CONSOLE_WIDTH];
+
+static inline int align_row(alignment_t alignment, int height, int percentage);
+static inline int align_col(alignment_t alignment, int width, int percentage);
 
 static void draw_image(const char *image, int start_row, int start_col,
                        int height, int width, int color);
@@ -55,9 +77,6 @@ const char *ascii_sokoban = "\
   \\___ \\ / _ \\| |/ / _ \\| '_ \\ / _` | '_ \\ \
   ____) | (_) |   < (_) | |_) | (_| | | | |\
  |_____/ \\___/|_|\\_\\___/|_.__/ \\__,_|_| |_|";
-const char *name = "Bradley Zhou (bradleyz)";
-const char *intro_screen_message =
-                            "Press 'i' for instructions or 'enter' to start";
 const char *ascii_left_box = "\
     .+------+\
   .' |    .'|\
@@ -75,6 +94,9 @@ const char *ascii_right_box = "\
  `. |   `. |\
    `+------+";
 
+const char *name = "Bradley Zhou (bradleyz)";
+const char *intro_screen_message =
+                            "Press 'i' for instructions or 'enter' to start";
 const char *game_screen_message =
     "Press 'i' for instructions, 'p' to pause, 'r' to restart, or 'q' to quit";
 const char *summary_screen_message = "Press any key to continue";
@@ -88,6 +110,7 @@ const char *end_level_messages[] = {
     "So you got that one. Try this one.",
     "Good work! On to the next...",
     "Congratulations! You've defused the bomb! Wait... wrong class...",
+    0,
 };
 
 const char *instructions[] = {
@@ -101,8 +124,55 @@ const char *instructions[] = {
     0,
 };
 
+char saved_screen[CONSOLE_SIZE];
+char timer_print_buf[CONSOLE_WIDTH];
+
 game_t current_game;
 sokoban_t sokoban;
+
+static inline int align_row(alignment_t alignment, int height, int percentage)
+{
+    if (height < 0 || height >= CONSOLE_HEIGHT ||
+        percentage < 0 || percentage > MAX_PERCENT) {
+        return -1;
+    }
+
+    switch (alignment) {
+        case TOP_SIDE:
+            return (CONSOLE_HEIGHT * percentage / MAX_PERCENT);
+        case CENTER:
+            return ((CONSOLE_HEIGHT - height) * percentage) / MAX_PERCENT;
+        // this can return negative
+        case BOTTOM_SIDE:
+            return ((CONSOLE_HEIGHT - 1) -
+                   (CONSOLE_HEIGHT * percentage) / MAX_PERCENT -
+                   height);
+        default:
+            return -1;
+    }
+}
+
+static inline int align_col(alignment_t alignment, int width, int percentage)
+{
+    if (width < 0 || width >= CONSOLE_WIDTH ||
+        percentage < 0 || percentage > MAX_PERCENT) {
+        return -1;
+    }
+
+    switch (alignment) {
+        case LEFT_SIDE:
+            return (CONSOLE_WIDTH * percentage / MAX_PERCENT);
+        case CENTER:
+            return ((CONSOLE_WIDTH - width) * percentage) / MAX_PERCENT;
+        case RIGHT_SIDE:
+            // this can return negative
+            return ((CONSOLE_WIDTH - 1) -
+                   (CONSOLE_WIDTH * percentage / MAX_PERCENT) -
+                   width);
+        default:
+            return -1;
+    }
+}
 
 void sokoban_tickback()
 {
@@ -149,8 +219,8 @@ static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
     set_cursor(1, 4);
     printf("Level: %d", current_game.level_number);
 
-    int curr_row = (CONSOLE_HEIGHT - level->height) / 2;
-    int curr_col = (CONSOLE_WIDTH - level->width) / 2;
+    int curr_row = align_row(CENTER, level->height, ALIGNMENT_HALF);
+    int curr_col = align_col(CENTER, level->width, ALIGNMENT_HALF);
     int first_col = curr_col;
     int end_col = curr_col + level->width - 1;
 
@@ -588,6 +658,7 @@ static void start_sokoban_level(int level_number)
 
     current_game.level_ticks = 0;
     current_game.level = soko_levels[level_number - 1];
+    current_game.level = soko_levels[0];
     current_game.level_number = level_number;
 
     restart_current_level();
@@ -622,45 +693,89 @@ static void display_introduction()
 {
     sokoban.state = INTRODUCTION;
     clear_console();
-    draw_image(ascii_sokoban, 2, 18, 6, 43, FGND_YLLW | BGND_BLACK);
-    draw_image(name, 9, 28, 1, 23, FGND_MAG | BGND_BLACK);
-    draw_image(intro_screen_message, 11, 17, 1, 46, DEFAULT_COLOR);
-    draw_image(ascii_left_box, 15, 9, 7, 13, FGND_BRWN | BGND_BLACK);
-    draw_image(ascii_right_box, 15, 58, 7, 12, FGND_BRWN | BGND_BLACK);
+    
+    int curr_draw_row;
+    int curr_draw_col;
 
+    curr_draw_row = align_row(TOP_SIDE, ASCII_SOKO_HEIGHT, ALIGNMENT_TWELFTH);
+    curr_draw_col = align_col(CENTER, ASCII_SOKO_WIDTH, ALIGNMENT_HALF);
+    draw_image(ascii_sokoban, curr_draw_row, curr_draw_col,
+               ASCII_SOKO_HEIGHT, ASCII_SOKO_WIDTH, FGND_YLLW | BGND_BLACK);
+
+    curr_draw_row += (ASCII_SOKO_HEIGHT + ELEMENT_ROW_SPACING);
+    curr_draw_col = align_col(CENTER, strlen(name), ALIGNMENT_HALF);
+    draw_image(name, curr_draw_row, curr_draw_col,
+               STRING_HEIGHT, strlen(name), FGND_MAG | BGND_BLACK);
+
+    curr_draw_row += (STRING_HEIGHT + ELEMENT_ROW_SPACING);
+    curr_draw_col = align_col(CENTER, strlen(intro_screen_message),
+                                      ALIGNMENT_HALF);
+    draw_image(intro_screen_message, curr_draw_row, curr_draw_col,
+               STRING_HEIGHT, strlen(intro_screen_message), DEFAULT_COLOR);
+
+    curr_draw_row = align_row(TOP_SIDE, ASCII_LBOX_HEIGHT,
+                                   (6 * ALIGNMENT_TENTH));
+    curr_draw_col = align_col(LEFT_SIDE, ASCII_LBOX_WIDTH,
+                                   (ALIGNMENT_TENTH));
+    draw_image(ascii_left_box, curr_draw_row, curr_draw_col,
+               ASCII_LBOX_HEIGHT, ASCII_LBOX_WIDTH, FGND_BRWN | BGND_BLACK);
+
+    curr_draw_row = align_row(TOP_SIDE, ASCII_RBOX_HEIGHT,
+                                   (6 * ALIGNMENT_TENTH));
+    curr_draw_col = align_col(RIGHT_SIDE, ASCII_RBOX_WIDTH,
+                                   (ALIGNMENT_TENTH));
+    draw_image(ascii_right_box, curr_draw_row, curr_draw_col,
+               ASCII_RBOX_HEIGHT, ASCII_RBOX_WIDTH, FGND_BRWN | BGND_BLACK);
+
+    curr_draw_col = align_col(CENTER, strlen("Highscores:"), ALIGNMENT_HALF);
     set_term_color(DEFAULT_COLOR);
-    putstring("Highscores:", 15, 34, DEFAULT_COLOR);
+    putstring("Highscores:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
+    curr_draw_row += ELEMENT_ROW_SPACING;
+    curr_draw_col = align_col(LEFT_SIDE, strlen("1 - Moves:"),
+                              ALIGNMENT_3EIGHTS);
+    int time_draw_col = curr_draw_col + strlen("    Time: ");
     if (sokoban.hiscores[0].num_moves == UINT32_MAX) {
-        putstring("1 - Moves:", 16, 30, DEFAULT_COLOR);
-        putstring("Time:", 17, 34, DEFAULT_COLOR);
+        putstring("1 - Moves:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
+        curr_draw_row += ELEMENT_ROW_SPACING;
+        putstring("    Time:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
     }
     else {
-        set_cursor(16, 30);
+        set_cursor(curr_draw_row, curr_draw_col);
         printf("1 - Moves: %u", sokoban.hiscores[0].num_moves);
-        putstring("Time: ", 17, 34, DEFAULT_COLOR);
-        put_time_at_loc(sokoban.hiscores[0].num_ticks, 17, 40);
+        curr_draw_row += ELEMENT_ROW_SPACING;
+        putstring("    Time: ", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
+        put_time_at_loc(sokoban.hiscores[0].num_ticks,
+                        curr_draw_row, time_draw_col);
     }
 
+    curr_draw_row += ELEMENT_ROW_SPACING;
     if (sokoban.hiscores[1].num_moves == UINT32_MAX) {
-        putstring("2 - Moves:", 18, 30, DEFAULT_COLOR);
-        putstring("Time:", 19, 34, DEFAULT_COLOR);
+        putstring("2 - Moves:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
+        curr_draw_row += ELEMENT_ROW_SPACING;
+        putstring("    Time:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
     }
     else {
-        set_cursor(18, 30);
+        set_cursor(curr_draw_row, curr_draw_col);
         printf("2 - Moves: %u", sokoban.hiscores[1].num_moves);
-        putstring("Time: ", 19, 34, DEFAULT_COLOR);
-        put_time_at_loc(sokoban.hiscores[1].num_ticks, 19, 40);
+        curr_draw_row += ELEMENT_ROW_SPACING;
+        putstring("    Time: ", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
+        put_time_at_loc(sokoban.hiscores[1].num_ticks,
+                        curr_draw_row, time_draw_col);
     }
 
+    curr_draw_row += ELEMENT_ROW_SPACING;
     if (sokoban.hiscores[2].num_moves == UINT32_MAX) {
-        putstring("3 - Moves:", 20, 30, DEFAULT_COLOR);
-        putstring("Time:", 21, 34, DEFAULT_COLOR);
+        putstring("3 - Moves:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
+        curr_draw_row += ELEMENT_ROW_SPACING;
+        putstring("    Time:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
     }
     else {
-        set_cursor(20, 30);
+        set_cursor(curr_draw_row, curr_draw_col);
         printf("3 - Moves: %u", sokoban.hiscores[2].num_moves);
-        putstring("Time: ", 21, 34, DEFAULT_COLOR);
-        put_time_at_loc(sokoban.hiscores[2].num_ticks, 21, 40);
+        curr_draw_row += ELEMENT_ROW_SPACING;
+        putstring("    Time: ", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
+        put_time_at_loc(sokoban.hiscores[2].num_ticks,
+                        curr_draw_row, time_draw_col);
     }
 }
 
