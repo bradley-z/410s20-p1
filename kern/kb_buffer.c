@@ -6,7 +6,6 @@ void kb_buf_initialize(kb_buf_t *kb_buf)
     kb_buf->write_index = 0;
 }
 
-// TODO: make some asserts about read and write index? prevent uninitialized buf
 bool kb_buf_read(kb_buf_t *kb_buf, int *read_result)
 {
     int read_index = kb_buf->read_index;

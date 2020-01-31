@@ -25,12 +25,6 @@ typedef enum {
 } sokoban_state_t;
 
 typedef struct {
-    int16_t total_boxes;
-    int8_t start_row;
-    int8_t start_col;
-} level_info_t;
-
-typedef struct {
     sokolevel_t *level;
     int level_number;
     unsigned int total_ticks;
@@ -59,10 +53,10 @@ typedef struct {
 
 void sokoban_tickback(unsigned int numTicks);
 
-void draw_image(int start_row, int start_col,
-                int height, int width,
-                int color, const char *image);
-level_info_t draw_sokoban_level(sokolevel_t *level);
+void draw_image(const char *image, int start_row, int start_col,
+                int height, int width, int color);
+bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
+                        int *start_row, int *start_col);
 void put_time_at_loc(int ticks, int row, int col);
 void print_current_game_moves(void);
 void print_current_game_time(void);

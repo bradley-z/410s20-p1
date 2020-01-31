@@ -5,16 +5,12 @@
 #include <string.h>
 #include <asm.h>
 
-#include <simics.h>
-
 #define ASCII_SPACE 0x20
 
 int console_color = (FGND_GREEN | BGND_BLACK);
 int console_row = 0;
 int console_col = 0;
 bool cursor_shown = true;
-
-// what do i do about cursor color?
 
 bool in_range(int row, int col)
 {
@@ -182,7 +178,7 @@ void show_cursor(void)
 void clear_console(void)
 {
     // we want to skip the second byte since that deals with color
-    char *curr = (char*)CONSOLE_MEM_BASE;
+    register char *curr = (char*)CONSOLE_MEM_BASE;
     char *end = (char*)(CONSOLE_MEM_BASE +
                         (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH));
     while (curr < end) {
@@ -202,9 +198,6 @@ void draw_char( int row, int col, int ch, int color )
         return;
     }
     if ((unsigned int)color > 0xFF) {
-        return;
-    }
-    if ((unsigned int)ch < 0x20 || (unsigned int)ch > 0xFF) {
         return;
     }
     char *write_addr = (char*)(CONSOLE_MEM_BASE +

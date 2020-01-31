@@ -30,7 +30,7 @@ timer_t timer;
 extern kb_buf_t kb_buffer;
 
 uint64_t idt_entry_pack(gate_t gate_type, uint32_t dpl, uint32_t offset,
-              uint8_t present, uint32_t seg_sel, uint8_t gate_size)
+                        uint8_t present, uint32_t seg_sel, uint8_t gate_size)
 {
     uint32_t top_half = 0;
     uint32_t bottom_half = 0;
