@@ -33,10 +33,6 @@ const char *ascii_sokoban = "\
  |_____/ \\___/|_|\\_\\___/|_.__/ \\__,_|_| |_|";
 const char *name = "Bradley Zhou (bradleyz)";
 const char *intro_screen_message = "Press 'i' for instructions or 'enter' to start";
-const char *game_screen_message = "Press 'i' for instructions, 'p' to pause, 'r' to restart, or 'q' to quit";
-const char *summary_screen_message = "Press any key to continue";
-const char *game_complete_message = "Press any key to return to introduction screen";
-const char *pause_screen_message = "Press 'p' to unpause";
 const char *ascii_left_box = "\
     .+------+\
   .' |    .'|\
@@ -54,6 +50,10 @@ const char *ascii_right_box = "\
  `. |   `. |\
    `+------+";
 
+const char *game_screen_message = "Press 'i' for instructions, 'p' to pause, 'r' to restart, or 'q' to quit";
+const char *summary_screen_message = "Press any key to continue";
+const char *game_complete_message = "Press any key to return to introduction screen";
+const char *pause_screen_message = "Press 'p' to unpause";
 const char *level_complete_messages[] = {
     "Phase 1 defused. How about the next one?",
     "That's number 2. Keep going!",
@@ -65,27 +65,17 @@ const char *level_complete_messages[] = {
 
 const char *instructions[] = {
     "0. You are represented by '@', boxes by 'o', and target locations by 'x'",
-    "1. Use WASD or HJKL to move the player onto empty squares",
+    "1. Use WASD or HJKL to either move onto an empty square or to push a box",
     "2. You can push boxes onto empty squares and target locations",
     "3. Boxes cannot be pulled, or pushed into other boxes or walls",
     "4. There is an equal number of boxes and target locations",
     "5. Push each box into its own target location to complete the level",
+    "6. Complete all six levels to complete the game",
+    NULL,
 };
 
 game_t current_game;
 sokoban_t sokoban;
-
-// TODO: why is my timer half speed
-// TODO: clean up code
-
-void put_time_at_loc(int ticks, int row, int col)
-{
-    int len = snprintf(timer_print_buf, CONSOLE_WIDTH, "%d", ticks);
-    timer_print_buf[len + 1] = '\0';
-    timer_print_buf[len] = timer_print_buf[len - 1];
-    timer_print_buf[len - 1] = '.';
-    putstring(timer_print_buf, row, col, DEFAULT_COLOR);
-}
 
 void sokoban_tickback(unsigned int numTicks)
 {
@@ -101,36 +91,20 @@ void sokoban_tickback(unsigned int numTicks)
     } 
 }
 
-void putstring(const char *str, int row, int col, int color)
+void draw_image(int start_row, int start_col,
+                int height, int width,
+                int color, const char *image)
 {
-    if (str == NULL) {
-        return;
+    int i, j;
+    int end_row = start_row + height;
+    int end_col = start_col + width;
+    int pixel_count = 0;
+    for (i = start_row; i < end_row; i++) {
+        for (j = start_col; j < end_col; j++) {
+            draw_char(i, j, image[pixel_count], color);
+            pixel_count++;
+        }
     }
-
-    int old_color;
-    get_term_color(&old_color);
-
-    set_term_color(color);
-    set_cursor(row, col);
-
-    while (*str != '\0') {
-        putbyte(*str);
-        str++;
-    }
-
-    set_term_color(old_color);
-}
-
-void start_sokoban_level(int level_number)
-{
-    sokoban.state = LEVEL_RUNNING;
-
-    current_game.level_ticks = 0;
-    current_game.level = soko_levels[level_number - 1];
-    // current_game.level = soko_levels[0];
-    current_game.level_number = level_number;
-
-    restart_current_level();
 }
 
 level_info_t draw_sokoban_level(sokolevel_t *level)
@@ -205,6 +179,15 @@ level_info_t draw_sokoban_level(sokolevel_t *level)
     return level_info;
 }
 
+void put_time_at_loc(int ticks, int row, int col)
+{
+    int len = snprintf(timer_print_buf, CONSOLE_WIDTH, "%d", ticks);
+    timer_print_buf[len + 1] = '\0';
+    timer_print_buf[len] = timer_print_buf[len - 1];
+    timer_print_buf[len - 1] = '.';
+    putstring(timer_print_buf, row, col, DEFAULT_COLOR);
+}
+
 void print_current_game_moves()
 {
     set_cursor(3, 11);
@@ -216,30 +199,24 @@ void print_current_game_time()
     put_time_at_loc(current_game.level_ticks / 10, 4, 10);
 }
 
-void complete_level()
+void putstring(const char *str, int row, int col, int color)
 {
-    current_game.game_state = IN_LEVEL_SUMMARY;
-
-    current_game.total_ticks += current_game.level_ticks;
-    current_game.total_moves += current_game.level_moves;
-    if (current_game.level_number == soko_nlevels) {
-        complete_game();
+    if (str == NULL) {
+        return;
     }
-    else {
-        clear_console();
-        const char *msg = level_complete_messages[current_game.level_number - 1];
-        int msg_len = strlen(msg);
 
-        putstring(msg, 11, (CONSOLE_WIDTH - msg_len) / 2, (FGND_YLLW | BGND_BLACK));
-        putstring(summary_screen_message, 19, 27, (FGND_MAG | BGND_BLACK));
+    int old_color;
+    get_term_color(&old_color);
 
-        set_term_color(DEFAULT_COLOR);
-        set_cursor(13, 35);
-        printf("Moves: %d", current_game.level_moves);
+    set_term_color(color);
+    set_cursor(row, col);
 
-        putstring("Time: ", 14, 35, DEFAULT_COLOR);
-        put_time_at_loc(current_game.level_ticks / 10, 14, 41);
+    while (*str != '\0') {
+        putbyte(*str);
+        str++;
     }
+
+    set_term_color(old_color);
 }
 
 bool valid_next_square(dir_t dir, int row, int col,
@@ -463,22 +440,6 @@ void handle_input(char ch)
     }
 }
 
-void draw_image(int start_row, int start_col,
-                int height, int width,
-                int color, const char *image)
-{
-    int i, j;
-    int end_row = start_row + height;
-    int end_col = start_col + width;
-    int pixel_count = 0;
-    for (i = start_row; i < end_row; i++) {
-        for (j = start_col; j < end_col; j++) {
-            draw_char(i, j, image[pixel_count], color);
-            pixel_count++;
-        }
-    }
-}
-
 void level_up()
 {
     if (current_game.level_number == soko_nlevels) {
@@ -521,9 +482,42 @@ void complete_game()
     put_time_at_loc(current_game.total_ticks / 10, 14, 44);
 }
 
+void complete_level()
+{
+    current_game.game_state = IN_LEVEL_SUMMARY;
+
+    current_game.total_ticks += current_game.level_ticks;
+    current_game.total_moves += current_game.level_moves;
+    if (current_game.level_number == soko_nlevels) {
+        complete_game();
+    }
+    else {
+        clear_console();
+        const char *msg = level_complete_messages[current_game.level_number - 1];
+        int msg_len = strlen(msg);
+
+        putstring(msg, 11, (CONSOLE_WIDTH - msg_len) / 2, (FGND_YLLW | BGND_BLACK));
+        putstring(summary_screen_message, 19, 27, (FGND_MAG | BGND_BLACK));
+
+        set_term_color(DEFAULT_COLOR);
+        set_cursor(13, 35);
+        printf("Moves: %d", current_game.level_moves);
+
+        putstring("Time: ", 14, 35, DEFAULT_COLOR);
+        put_time_at_loc(current_game.level_ticks / 10, 14, 41);
+    }
+}
+
 void quit_game()
 {
     display_introduction();
+}
+
+void pause_game()
+{
+    current_game.game_state = PAUSED;
+    clear_console();
+    putstring(pause_screen_message, 12, 30, DEFAULT_COLOR);
 }
 
 void restart_current_level()
@@ -541,11 +535,16 @@ void restart_current_level()
     current_game.game_state = RUNNING;
 }
 
-void pause_game()
+void start_sokoban_level(int level_number)
 {
-    current_game.game_state = PAUSED;
-    clear_console();
-    putstring(pause_screen_message, 12, 30, DEFAULT_COLOR);
+    sokoban.state = LEVEL_RUNNING;
+
+    current_game.level_ticks = 0;
+    current_game.level = soko_levels[level_number - 1];
+    // current_game.level = soko_levels[0];
+    current_game.level_number = level_number;
+
+    restart_current_level();
 }
 
 void start_game()
@@ -563,13 +562,14 @@ void display_instructions()
     sokoban.previous_state = sokoban.state;
     sokoban.state = INSTRUCTIONS;
     clear_console();
-    putstring("Instructions", 4, 34, FGND_YLLW | BGND_BLACK);
-    putstring("Press 'i' to return", 20, 31, FGND_MAG | BGND_BLACK);
+    putstring("Instructions", 3, 34, FGND_YLLW | BGND_BLACK);
+    putstring("Press 'i' to return", 21, 31, FGND_MAG | BGND_BLACK);
 
-    int row = 7;
-    int i;
-    for (i = 0; i < 6; i++) {
+    int row = 6;
+    int i = 0;
+    while (instructions[i] != NULL) {
         putstring(instructions[i], row, 3, DEFAULT_COLOR);
+        i++;
         row += 2;
     }
 }

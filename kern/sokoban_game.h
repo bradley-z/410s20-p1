@@ -58,24 +58,26 @@ typedef struct {
 } sokoban_t;
 
 void sokoban_tickback(unsigned int numTicks);
-void put_time_at_loc(int ticks, int row, int col);
-void putstring(const char *str, int row, int col, int color);
-void start_sokoban_level(int level_number);
-level_info_t draw_sokoban_level(sokolevel_t *level);
-void print_current_game_moves(void);
-void print_current_game_time(void);
-void complete_level(void);
-bool valid_next_square(dir_t dir, int row, int col, int *new_row, int *new_col);
-void try_move(char ch);
-void handle_input(char ch);
+
 void draw_image(int start_row, int start_col,
                 int height, int width,
                 int color, const char *image);
+level_info_t draw_sokoban_level(sokolevel_t *level);
+void put_time_at_loc(int ticks, int row, int col);
+void print_current_game_moves(void);
+void print_current_game_time(void);
+void putstring(const char *str, int row, int col, int color);
+
+bool valid_next_square(dir_t dir, int row, int col, int *new_row, int *new_col);
+void try_move(char ch);
+void handle_input(char ch);
 void level_up(void);
 void complete_game(void);
+void complete_level(void);
 void quit_game(void);
-void restart_current_level(void);
 void pause_game(void);
+void restart_current_level(void);
+void start_sokoban_level(int level_number);
 void start_game(void);
 void display_instructions(void);
 void display_introduction(void);
