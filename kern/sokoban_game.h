@@ -50,7 +50,7 @@ typedef struct {
     sokoban_state_t previous_state;
 } sokoban_t;
 
-void sokoban_tickback(unsigned int numTicks);
+void sokoban_tickback(void);
 
 void draw_image(const char *image, int start_row, int start_col,
                 int height, int width, int color);

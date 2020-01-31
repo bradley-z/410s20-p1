@@ -80,7 +80,7 @@ const char *instructions[] = {
 game_t current_game;
 sokoban_t sokoban;
 
-void sokoban_tickback(unsigned int numTicks)
+void sokoban_tickback()
 {
     if (sokoban.state != LEVEL_RUNNING) {
         return;

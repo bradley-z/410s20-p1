@@ -72,5 +72,5 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
  **/
 void tick(unsigned int numTicks)
 {
-    sokoban_tickback(numTicks);
+    sokoban_tickback();
 }
