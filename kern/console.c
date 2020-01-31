@@ -54,7 +54,8 @@ void write_char( char ch )
     else if (ch == '\b') {
         if (console_col > 0) {
             console_col--;
-            write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
+            write_addr = (char*)(CONSOLE_MEM_BASE +
+                         2 * (console_row * CONSOLE_WIDTH + console_col));
             write_addr[0] = ASCII_SPACE;
             write_addr[1] = console_color;
         }
@@ -62,7 +63,8 @@ void write_char( char ch )
             if (console_row != 0) {
                 console_row--;
                 console_col = CONSOLE_WIDTH - 1;
-                write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
+                write_addr = (char*)(CONSOLE_MEM_BASE +
+                             2 * (console_row * CONSOLE_WIDTH + console_col));
                 write_addr[0] = ASCII_SPACE;
                 write_addr[1] = console_color;
             }
@@ -70,7 +72,8 @@ void write_char( char ch )
         }
     }
     else {
-        write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (console_row * CONSOLE_WIDTH + console_col));
+        write_addr = (char*)(CONSOLE_MEM_BASE +
+                     2 * (console_row * CONSOLE_WIDTH + console_col));
         write_addr[0] = ch;
         write_addr[1] = console_color;
         if (console_col < CONSOLE_WIDTH - 1) {
@@ -180,7 +183,8 @@ void clear_console(void)
 {
     // we want to skip the second byte since that deals with color
     char *curr = (char*)CONSOLE_MEM_BASE;
-    char *end = (char*)(CONSOLE_MEM_BASE + (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH));
+    char *end = (char*)(CONSOLE_MEM_BASE +
+                        (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH));
     while (curr < end) {
         curr[0] = ASCII_SPACE;
         curr += 2;
@@ -200,17 +204,18 @@ void draw_char( int row, int col, int ch, int color )
     if ((unsigned int)color > 0xFF) {
         return;
     }
-    // the ascii range of printable chars as defined in keyhelp.h
-    // if (!(ch >= 0x20 && ch <= 0x7F)) {
-    //     return;
-    // }
-    char *write_addr = (char*)(CONSOLE_MEM_BASE + 2 * (row * CONSOLE_WIDTH + col));
+    if ((unsigned int)ch < 0x20 || (unsigned int)ch > 0xFF) {
+        return;
+    }
+    char *write_addr = (char*)(CONSOLE_MEM_BASE +
+                               2 * (row * CONSOLE_WIDTH + col));
     write_addr[0] = ch;
     write_addr[1] = color;
 }
 
 char get_char( int row, int col )
 {
-    char *read_addr = (char*)(CONSOLE_MEM_BASE + 2 * (row * CONSOLE_WIDTH + col));
+    char *read_addr = (char*)(CONSOLE_MEM_BASE +
+                              2 * (row * CONSOLE_WIDTH + col));
     return *read_addr;
 }

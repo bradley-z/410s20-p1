@@ -37,8 +37,6 @@ void tick(unsigned int numTicks);
 #include <sokoban.h>
 #include <sokoban_game.h>
 
-volatile static int __kernel_all_done = 0;
-
 /** @brief Kernel entrypoint.
  *  
  *  This is the entrypoint for the kernel.  It simply sets up the
@@ -59,17 +57,9 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
 
     hide_cursor();
 
-    set_term_color(FGND_GREEN | BGND_BLACK);
-
-    lprintf( "Hello from a brand new kernel!" );
-
-    lprintf( "Available levels: %d/%d.", soko_nlevels, MAX_LEVELS );
+    set_term_color(FGND_WHITE | BGND_BLACK);
 
     sokoban_initialize_and_run();
-
-    while (!__kernel_all_done) {
-        continue;
-    }
 
     return 0;
 }

@@ -1,10 +1,10 @@
 #include <sokoban_game.h>
-#include <stdint.h>
 #include <p1kern.h>
-#include <video_defines.h>
-#include <stdio.h>
-#include <string.h>
 #include <sokoban.h>
+#include <stdint.h>         /* UINT32_MAX */
+#include <video_defines.h>  /* console size, color constants */
+#include <stdio.h>          /* printf */
+#include <string.h>         /* memcpy */
 
 #define ASCII_SPACE 0x20
 
@@ -32,7 +32,8 @@ const char *ascii_sokoban = "\
   ____) | (_) |   < (_) | |_) | (_| | | | |\
  |_____/ \\___/|_|\\_\\___/|_.__/ \\__,_|_| |_|";
 const char *name = "Bradley Zhou (bradleyz)";
-const char *intro_screen_message = "Press 'i' for instructions or 'enter' to start";
+const char *intro_screen_message =
+                            "Press 'i' for instructions or 'enter' to start";
 const char *ascii_left_box = "\
     .+------+\
   .' |    .'|\
@@ -50,11 +51,13 @@ const char *ascii_right_box = "\
  `. |   `. |\
    `+------+";
 
-const char *game_screen_message = "Press 'i' for instructions, 'p' to pause, 'r' to restart, or 'q' to quit";
+const char *game_screen_message =
+    "Press 'i' for instructions, 'p' to pause, 'r' to restart, or 'q' to quit";
 const char *summary_screen_message = "Press any key to continue";
-const char *game_complete_message = "Press any key to return to introduction screen";
+const char *game_complete_message =
+                            "Press any key to return to introduction screen";
 const char *pause_screen_message = "Press 'p' to unpause";
-const char *level_complete_messages[] = {
+const char *end_level_messages[] = {
     "Phase 1 defused. How about the next one?",
     "That's number 2. Keep going!",
     "Halfway there!",
@@ -291,8 +294,10 @@ void try_move(char ch)
     }
 
     char next_square = get_char(new_row, new_col);
-    bool movable = (next_square == ASCII_SPACE) || (next_square == MY_SOK_GOAL);
-    bool pushable = (next_square == MY_SOK_BOX) || (next_square == MY_SOK_BOX_ON_GOAL);
+    bool movable = (next_square == ASCII_SPACE) ||
+                   (next_square == MY_SOK_GOAL);
+    bool pushable = (next_square == MY_SOK_BOX) ||
+                    (next_square == MY_SOK_BOX_ON_GOAL);
 
     if (movable) {
         if (current_game.on_goal) {
@@ -320,8 +325,10 @@ void try_move(char ch)
             return;
         }
 
-        char next_next_square = get_char(next_next_square_row, next_next_square_col);
-        bool next_next_movable = (next_next_square == ASCII_SPACE) || (next_next_square == MY_SOK_GOAL);
+        char next_next_square = get_char(next_next_square_row,
+                                         next_next_square_col);
+        bool next_next_movable = (next_next_square == ASCII_SPACE) ||
+                                 (next_next_square == MY_SOK_GOAL);
 
         if (next_next_movable) {
             if (current_game.on_goal) {
@@ -338,10 +345,12 @@ void try_move(char ch)
             }
             draw_char(new_row, new_col, MY_SOK_PLAYER, PLAYER_COLOR);
             if (next_next_square == ASCII_SPACE) {
-                draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX, BOX_COLOR);
+                draw_char(next_next_square_row, next_next_square_col,
+                          MY_SOK_BOX, BOX_COLOR);
             }
             else if (next_next_square == MY_SOK_GOAL) {
-                draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
+                draw_char(next_next_square_row, next_next_square_col,
+                          MY_SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
             }
             current_game.level_moves++;
             current_game.curr_row = new_row;
@@ -350,7 +359,8 @@ void try_move(char ch)
             if (next_square == MY_SOK_BOX && next_next_square == MY_SOK_GOAL) {
                 current_game.boxes_left--;
             }
-            if (next_square == MY_SOK_BOX_ON_GOAL && next_next_square == ASCII_SPACE) {
+            if (next_square == MY_SOK_BOX_ON_GOAL &&
+                next_next_square == ASCII_SPACE) {
                 current_game.boxes_left++;
             }
         }
@@ -385,7 +395,8 @@ void handle_input(char ch)
                     display_introduction();
                 }
                 else if (sokoban.previous_state == LEVEL_RUNNING) {
-                    memcpy((void*)CONSOLE_MEM_BASE, (void*)saved_screen, CONSOLE_SIZE);
+                    memcpy((void*)CONSOLE_MEM_BASE,
+                           (void*)saved_screen, CONSOLE_SIZE);
                     sokoban.previous_state = sokoban.state;
                     sokoban.state = LEVEL_RUNNING;
                     current_game.game_state = RUNNING;
@@ -403,18 +414,21 @@ void handle_input(char ch)
         }
         else if (game_state == PAUSED) {
             if (ch == 'p') {
-                memcpy((void*)CONSOLE_MEM_BASE, (void*)saved_screen, CONSOLE_SIZE);
+                memcpy((void*)CONSOLE_MEM_BASE,
+                       (void*)saved_screen, CONSOLE_SIZE);
                 current_game.game_state = RUNNING;
             }
         }
         else if (game_state == RUNNING) {
             switch (ch) {
                 case 'i':
-                    memcpy((void*)saved_screen, (void*)CONSOLE_MEM_BASE, CONSOLE_SIZE);
+                    memcpy((void*)saved_screen,
+                           (void*)CONSOLE_MEM_BASE, CONSOLE_SIZE);
                     display_instructions();
                     break;
                 case 'p':
-                    memcpy((void*)saved_screen, (void*)CONSOLE_MEM_BASE, CONSOLE_SIZE);
+                    memcpy((void*)saved_screen,
+                           (void*)CONSOLE_MEM_BASE, CONSOLE_SIZE);
                     pause_game();
                     break;
                 case 'q':
@@ -458,7 +472,8 @@ void complete_game()
     int i;
     for (i = 0; i < 3; i++) {
         if (score.num_moves < sokoban.hiscores[i].num_moves ||
-           (score.num_moves == sokoban.hiscores[i].num_moves && score.num_ticks < sokoban.hiscores[i].num_ticks)) {
+           (score.num_moves == sokoban.hiscores[i].num_moves &&
+            score.num_ticks < sokoban.hiscores[i].num_ticks)) {
             int j;
             for (j = 2; j > i; j--) {
                 sokoban.hiscores[j] = sokoban.hiscores[j - 1];
@@ -469,7 +484,7 @@ void complete_game()
     }
 
     clear_console();
-    const char *msg = level_complete_messages[current_game.level_number - 1];
+    const char *msg = end_level_messages[current_game.level_number - 1];
     int msg_len = strlen(msg);
 
     putstring(msg, 11, (CONSOLE_WIDTH - msg_len) / 2, FGND_YLLW | BGND_BLACK);
@@ -493,10 +508,11 @@ void complete_level()
     }
     else {
         clear_console();
-        const char *msg = level_complete_messages[current_game.level_number - 1];
+        const char *msg = end_level_messages[current_game.level_number - 1];
         int msg_len = strlen(msg);
 
-        putstring(msg, 11, (CONSOLE_WIDTH - msg_len) / 2, (FGND_YLLW | BGND_BLACK));
+        putstring(msg, 11,
+                  (CONSOLE_WIDTH - msg_len) / 2, (FGND_YLLW | BGND_BLACK));
         putstring(summary_screen_message, 19, 27, (FGND_MAG | BGND_BLACK));
 
         set_term_color(DEFAULT_COLOR);

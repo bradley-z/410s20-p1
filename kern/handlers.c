@@ -64,7 +64,8 @@ void install_idt_km(void *idt_base_addr, unsigned int idt_entry, void *handler)
 {
     uint32_t offset = idt_entry * GATE_SIZE;
     uint64_t *idt_entry_addr = (uint64_t*)((char*)idt_base_addr + offset);
-    uint64_t packed_gate = idt_entry_pack(TRAP, 0, (uint32_t)handler, 1, SEGSEL_KERNEL_CS, 1);
+    uint64_t packed_gate = idt_entry_pack(TRAP, 0, (uint32_t)handler,
+                                          1, SEGSEL_KERNEL_CS, 1);
     *idt_entry_addr = packed_gate;
 }
 
