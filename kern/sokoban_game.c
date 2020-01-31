@@ -21,6 +21,7 @@
 #define GOAL_COLOR          (FGND_YLLW | BGND_BLACK)
 #define BOX_ON_GOAL_COLOR   (FGND_GREEN | BGND_BLACK)
 
+#define ALIGNMENT_TWENTYTH  5
 #define ALIGNMENT_TWELFTH   8
 #define ALIGNMENT_TENTH     10
 #define ALIGNMENT_EIGHT     12
@@ -677,15 +678,24 @@ static void display_instructions()
     sokoban.previous_state = sokoban.state;
     sokoban.state = INSTRUCTIONS;
     clear_console();
-    putstring("Instructions", 3, 34, FGND_YLLW | BGND_BLACK);
-    putstring("Press 'i' to return", 21, 31, FGND_MAG | BGND_BLACK);
+    const char *ins_str = "Instructions";
+    const char *ret_str = "Press 'i' to return";
+    putstring(ins_str,
+              align_row(TOP_SIDE, STRING_HEIGHT, ALIGNMENT_EIGHT),
+              align_col(CENTER, strlen(ins_str), ALIGNMENT_HALF),
+              FGND_YLLW | BGND_BLACK);
+    putstring(ret_str,
+              align_row(BOTTOM_SIDE, STRING_HEIGHT, ALIGNMENT_TENTH),
+              align_col(CENTER, strlen(ret_str), ALIGNMENT_HALF),
+              FGND_MAG | BGND_BLACK);
 
-    int row = 6;
+    int row = align_row(TOP_SIDE, STRING_HEIGHT, ALIGNMENT_QUARTER);
+    int col = align_col(LEFT_SIDE, strlen(ins_str), ALIGNMENT_TWENTYTH);
     int i = 0;
     while (instructions[i] != NULL) {
-        putstring(instructions[i], row, 3, DEFAULT_COLOR);
+        putstring(instructions[i], row, col, DEFAULT_COLOR);
         i++;
-        row += 2;
+        row += (STRING_HEIGHT + ELEMENT_ROW_SPACING);
     }
 }
 
@@ -693,26 +703,30 @@ static void display_introduction()
 {
     sokoban.state = INTRODUCTION;
     clear_console();
-    
+
     int curr_draw_row;
     int curr_draw_col;
 
+    /* draw the ascii sokoban logo */
     curr_draw_row = align_row(TOP_SIDE, ASCII_SOKO_HEIGHT, ALIGNMENT_TWELFTH);
     curr_draw_col = align_col(CENTER, ASCII_SOKO_WIDTH, ALIGNMENT_HALF);
     draw_image(ascii_sokoban, curr_draw_row, curr_draw_col,
                ASCII_SOKO_HEIGHT, ASCII_SOKO_WIDTH, FGND_YLLW | BGND_BLACK);
 
+    /* draw the author name below the ascii sokoban logo */
     curr_draw_row += (ASCII_SOKO_HEIGHT + ELEMENT_ROW_SPACING);
     curr_draw_col = align_col(CENTER, strlen(name), ALIGNMENT_HALF);
     draw_image(name, curr_draw_row, curr_draw_col,
                STRING_HEIGHT, strlen(name), FGND_MAG | BGND_BLACK);
 
+    /* draw the start message below the author */
     curr_draw_row += (STRING_HEIGHT + ELEMENT_ROW_SPACING);
     curr_draw_col = align_col(CENTER, strlen(intro_screen_message),
                                       ALIGNMENT_HALF);
     draw_image(intro_screen_message, curr_draw_row, curr_draw_col,
                STRING_HEIGHT, strlen(intro_screen_message), DEFAULT_COLOR);
 
+    /* draw the left ascii box 60% from the top and 10% from the left */
     curr_draw_row = align_row(TOP_SIDE, ASCII_LBOX_HEIGHT,
                                    (6 * ALIGNMENT_TENTH));
     curr_draw_col = align_col(LEFT_SIDE, ASCII_LBOX_WIDTH,
@@ -720,6 +734,7 @@ static void display_introduction()
     draw_image(ascii_left_box, curr_draw_row, curr_draw_col,
                ASCII_LBOX_HEIGHT, ASCII_LBOX_WIDTH, FGND_BRWN | BGND_BLACK);
 
+    /* draw the right ascii box 60% from the top and 10% from the right */
     curr_draw_row = align_row(TOP_SIDE, ASCII_RBOX_HEIGHT,
                                    (6 * ALIGNMENT_TENTH));
     curr_draw_col = align_col(RIGHT_SIDE, ASCII_RBOX_WIDTH,
@@ -727,6 +742,7 @@ static void display_introduction()
     draw_image(ascii_right_box, curr_draw_row, curr_draw_col,
                ASCII_RBOX_HEIGHT, ASCII_RBOX_WIDTH, FGND_BRWN | BGND_BLACK);
 
+    /* start drawing high scores at halfway from the top */
     curr_draw_col = align_col(CENTER, strlen("Highscores:"), ALIGNMENT_HALF);
     set_term_color(DEFAULT_COLOR);
     putstring("Highscores:", curr_draw_row, curr_draw_col, DEFAULT_COLOR);
