@@ -305,6 +305,7 @@ void try_move(char ch)
 
     char next_square = get_char(new_row, new_col);
     bool movable = (next_square == ASCII_SPACE) || (next_square == MY_SOK_GOAL);
+    bool pushable = (next_square == MY_SOK_BOX) || (next_square == MY_SOK_BOX_ON_GOAL);
 
     if (movable) {
         if (current_game.on_goal) {
@@ -325,7 +326,7 @@ void try_move(char ch)
         current_game.curr_row = new_row;
         current_game.curr_col = new_col;
     }
-    else if (next_square == MY_SOK_BOX) {
+    else if (pushable) {
         int next_next_square_row, next_next_square_col;
 
         switch (dir) {
@@ -362,103 +363,38 @@ void try_move(char ch)
         }
 
         char next_next_square = get_char(next_next_square_row, next_next_square_col);
+        bool next_next_movable = (next_next_square == ASCII_SPACE) || (next_next_square == MY_SOK_GOAL);
 
-        if (next_next_square == ASCII_SPACE) {
+        if (next_next_movable) {
             if (current_game.on_goal) {
                 draw_char(row, col, MY_SOK_GOAL, GOAL_COLOR);
-                current_game.on_goal = false;
+                if (next_square == MY_SOK_BOX) {
+                    current_game.on_goal = false;
+                }
             }
             else {
                 draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
+                if (next_square == MY_SOK_BOX_ON_GOAL) {
+                    current_game.on_goal = true;
+                }
             }
             draw_char(new_row, new_col, MY_SOK_PLAYER, PLAYER_COLOR);
-            draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX, BOX_COLOR);
+            if (next_next_square == ASCII_SPACE) {
+                draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX, BOX_COLOR);
+            }
+            else if (next_next_square == MY_SOK_GOAL) {
+                draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
+            }
             current_game.level_moves++;
             current_game.curr_row = new_row;
             current_game.curr_col = new_col;
-        }
-        else if (next_next_square == MY_SOK_GOAL) {
-            if (current_game.on_goal) {
-                draw_char(row, col, MY_SOK_GOAL, GOAL_COLOR);
-                current_game.on_goal = false;
-            }
-            else {
-                draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
-            }
-            draw_char(new_row, new_col, MY_SOK_PLAYER, PLAYER_COLOR);
-            draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
-            current_game.level_moves++;
-            current_game.boxes_left--;
-            current_game.curr_row = new_row;
-            current_game.curr_col = new_col;
-        }
-    }
-    else if (next_square == MY_SOK_BOX_ON_GOAL) {
-        int next_next_square_row, next_next_square_col;
 
-        switch (dir) {
-            case UP:
-                if (row - 2 < 0) {
-                    return;
-                }
-                next_next_square_row = row - 2;
-                next_next_square_col = col;
-                break;
-            case DOWN:
-                if (row + 2 >= CONSOLE_HEIGHT) {
-                    return;
-                }
-                next_next_square_row = row + 2;
-                next_next_square_col = col;
-                break;
-            case LEFT:
-                if (col - 2 < 0) {
-                    return;
-                }
-                next_next_square_row = row;
-                next_next_square_col = col - 2;
-                break;
-            case RIGHT:
-                if (col + 2 >= CONSOLE_WIDTH) {
-                    return;
-                }
-                next_next_square_row = row;
-                next_next_square_col = col + 2;
-                break;
-            default:
-                return;
-        }
-
-        char next_next_square = get_char(next_next_square_row, next_next_square_col);
-
-        if (next_next_square == ASCII_SPACE) {
-            if (current_game.on_goal) {
-                draw_char(row, col, MY_SOK_GOAL, GOAL_COLOR);
+            if (next_square == MY_SOK_BOX && next_next_square == MY_SOK_GOAL) {
+                current_game.boxes_left--;
             }
-            else {
-                draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
-                current_game.on_goal = true;
+            if (next_square == MY_SOK_BOX_ON_GOAL && next_next_square == ASCII_SPACE) {
+                current_game.boxes_left++;
             }
-            draw_char(new_row, new_col, MY_SOK_PLAYER, PLAYER_COLOR);
-            draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX, BOX_COLOR);
-            current_game.level_moves++;
-            current_game.boxes_left++;
-            current_game.curr_row = new_row;
-            current_game.curr_col = new_col;
-        }
-        else if (next_next_square == MY_SOK_GOAL) {
-            if (current_game.on_goal) {
-                draw_char(row, col, MY_SOK_GOAL, GOAL_COLOR);
-            }
-            else {
-                draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
-                current_game.on_goal = true;
-            }
-            draw_char(new_row, new_col, MY_SOK_PLAYER, PLAYER_COLOR);
-            draw_char(next_next_square_row, next_next_square_col, MY_SOK_BOX_ON_GOAL, BOX_ON_GOAL_COLOR);
-            current_game.level_moves++;
-            current_game.curr_row = new_row;
-            current_game.curr_col = new_col;
         }
     }
     print_current_game_moves();
