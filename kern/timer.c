@@ -8,7 +8,8 @@
 #include <asm.h>            /* outb() */
 #include <timer_defines.h>  /* TIMER_MODE_IO_PORT, TIMER_SQUARE_WAVE */
 
-void timer_initialize(timer_t *timer, void (*tickback)(unsigned int)) {
+void timer_initialize(timer_t *timer, void (*tickback)(unsigned int))
+{
     timer->numTicks = 0;
     timer->tickback = tickback;
 
@@ -20,7 +21,8 @@ void timer_initialize(timer_t *timer, void (*tickback)(unsigned int)) {
     outb(TIMER_PERIOD_IO_PORT, period_msb);
 }
 
-void timer_tick(timer_t *timer) {
+void timer_tick(timer_t *timer)
+{
     timer->numTicks++;
     /* if tickback was initialize to NULL because user didn't want a callback */
     if (timer->tickback) {
