@@ -45,6 +45,7 @@ bool kb_buf_write(kb_buf_t *kb_buf, int keypress)
 
     /* a circ buffer is full when the read_index is 1 less than write_index */
     if ((read_index + 1) % CIRCULAR_BUFFER_SIZE == write_index) {
+        /* just drop keypress event if buffer is full */
         return false;
     }
 

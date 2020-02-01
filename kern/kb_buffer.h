@@ -57,7 +57,7 @@ typedef struct {
 } kb_buf_t;
 
 /** @brief initialize the keyboard buffer
- * 
+ *
  *  C doesn't have elegant default constructors :( so this function just zero's
  *  out read_index and write_index of the buffer passed in, which is the state
  *  a circular buffer should be at first.
@@ -67,22 +67,22 @@ typedef struct {
  */
 void kb_buf_initialize(kb_buf_t *kb_buf);
 /** @brief reads the next keypress scancode from the keyboard buffer
- * 
+ *
  *  If the queue is empty, false is returned. Otherwise, read the next keypress
  *  scancode from the queue, store it into read_result, and return true. The
  *  read_index is then incremented, wrapping back to 0 if necessary.
- *  
+ *
  *  @param kb_buf pointer to keyboard buffer to try to read next scancode from
  *  @param read_result pointer to int to store scancode at if buffer is not full
  *  @return whether or not the read was successful (if the buffer was nonempty)
  */
 bool kb_buf_read(kb_buf_t *kb_buf, int *read_result);
 /** @brief writes a keypress scancode into the keyboard buffer
- * 
+ *
  *  If the queue is full, false is returned. Otherwise, write the keypress event
  *  into the buffer and return true. The write_index is then incremented,
  *  wrapping back to 0 if necessary.
- *  
+ *
  *  @param kb_buf pointer to keyboard buffer to try to write keypress into
  *  @param keypress scancode to tryto write
  *  @return whether or not the write was successful (if the buffer was not full)
