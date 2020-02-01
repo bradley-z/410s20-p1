@@ -60,6 +60,7 @@ uint64_t idt_entry_pack(gate_t gate_type, uint32_t dpl, uint32_t offset,
     return (uint64_t)top_half << 32 | (uint64_t)bottom_half;
 }
 
+// TODO: make sure idt_entry is valid
 void install_idt_km(void *idt_base_addr, unsigned int idt_entry, void *handler)
 {
     uint32_t offset = idt_entry * GATE_SIZE;
