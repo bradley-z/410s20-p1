@@ -40,9 +40,9 @@ void tick(unsigned int numTicks);
 #include <timer.h>
 #include <kb_buffer.h>
 
-/* timer defined in timer.h */
+/* timer declared in timer.h */
 extern timer_t timer;
-/* keyboard buffer defined in kb.c */
+/* keyboard buffer declared in kb.c */
 extern kb_buf_t kb_buffer;
 
 /** @brief Kernel entrypoint.

@@ -45,9 +45,9 @@ typedef enum {
     TRAP = 0x700,
 } gate_t;
 
-/* timer defined in timer.h */
+/* timer declared in timer.h */
 extern timer_t timer;
-/* keyboard buffer defined in kb.c */
+/* keyboard buffer declared in kb.c */
 extern kb_buf_t kb_buffer;
 
 /** @brief takes all information found in interrupt gate and packs into 64 bits

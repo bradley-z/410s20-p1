@@ -9,7 +9,7 @@
  *       1193182 Hz (cycles per second). Since we want our timer to fire every
  *       10 milliseconds, we need to divide that internal rate by 100 to get the
  *       number of cycles per 10 milliseconds. The actual result is not a whole
- *       number, so the timer is ever so slightly (0.0015%) slow.
+ *       number, so the timer is ever so slightly (0.007%) fast.
  */
 #ifndef __TIMER_H_
 #define __TIMER_H_

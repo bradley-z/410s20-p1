@@ -1,7 +1,7 @@
 #include <sokoban_game.h>
 #include <p1kern.h>
 #include <sokoban.h>
-#include <stdbool.h>
+#include <stdbool.h>        /* bool */
 #include <stdint.h>         /* UINT32_MAX */
 #include <video_defines.h>  /* console size, color constants */
 #include <stdio.h>          /* printf */
@@ -190,7 +190,7 @@ static inline int align_col(alignment_t alignment, int width, int percentage)
 
 void sokoban_tickback()
 {
-    if (sokoban.state != LEVEL_RUNNING) {
+    if (sokoban.state != GAME_RUNNING) {
         return;
     }
     if (current_game.game_state != RUNNING) {
@@ -502,10 +502,10 @@ static void handle_input(char ch)
                 if (sokoban.previous_state == INTRODUCTION) {
                     display_introduction();
                 }
-                else if (sokoban.previous_state == LEVEL_RUNNING) {
+                else if (sokoban.previous_state == GAME_RUNNING) {
                     memcpy((void*)CONSOLE_MEM_BASE,
                            (void*)saved_screen, CONSOLE_SIZE);
-                    sokoban.state = LEVEL_RUNNING;
+                    sokoban.state = GAME_RUNNING;
                     current_game.game_state = RUNNING;
                 }
                 break;
@@ -513,7 +513,7 @@ static void handle_input(char ch)
                 return;
         }
     }
-    else if (state == LEVEL_RUNNING) {
+    else if (state == GAME_RUNNING) {
         game_state_t game_state = current_game.game_state;
 
         if (game_state == IN_LEVEL_SUMMARY) {
@@ -677,7 +677,7 @@ static void restart_current_level()
 
 static void start_sokoban_level(int level_number)
 {
-    sokoban.state = LEVEL_RUNNING;
+    sokoban.state = GAME_RUNNING;
 
     current_game.level_ticks = 0;
     current_game.level = soko_levels[level_number - 1];

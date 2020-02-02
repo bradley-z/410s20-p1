@@ -13,9 +13,7 @@
 #include <kb_buffer.h>  /* kb_buf_t, kb_buf_read() */
 #include <keyhelp.h>    /* kh_type, KH_HASDATA(), KH_ISMAKE(), KH_GETCHAR() */
 
-/**
- * global keyboard buffer that we poll for new keypresses
- */
+/* global keyboard buffer that we poll for new keypresses */
 kb_buf_t kb_buffer;
 
 int readchar(void)
