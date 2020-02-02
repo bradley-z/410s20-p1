@@ -1,12 +1,21 @@
 /** @file timer.c
  *  @brief timer implementation
  *
+ *  Implementation for timer, which keeps track of the number of timer
+ *  interrupts received and a callback function that is called with the number
+ *  of ticks.
+ *
  *  @author Bradley Zhou (bradleyz)
  *  @bug described in timer.h
  */
 #include <timer.h>
 #include <asm.h>            /* outb() */
 #include <timer_defines.h>  /* TIMER_MODE_IO_PORT, TIMER_SQUARE_WAVE */
+
+void timer_set_tickback(timer_t *timer, void (*tickback)(unsigned int))
+{
+    timer->tickback = tickback;
+}
 
 void timer_initialize(timer_t *timer, void (*tickback)(unsigned int))
 {

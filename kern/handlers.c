@@ -45,8 +45,8 @@ typedef enum {
     TRAP = 0x700,
 } gate_t;
 
-/* global timer struct that keeps track of ticks and callback */
-timer_t timer;
+/* timer defined in timer.h */
+extern timer_t timer;
 /* keyboard buffer defined in kb.c */
 extern kb_buf_t kb_buffer;
 
@@ -128,7 +128,7 @@ static bool install_idt_km(void *base_addr,
 /** @brief C timer handler function
  *
  *  This is the handler function called by the assembly wrapper function that
- *  is invoked upon receiving an interrupt.
+ *  is invoked upon receiving a timer interrupt.
  *
  *  @return Void.
  */
@@ -138,10 +138,10 @@ void timer_handler()
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
 }
 
-/** @brief C timer handler function
+/** @brief C keyboard handler function
  *
  *  This is the handler function called by the assembly wrapper function that
- *  is invoked upon receiving an interrupt.
+ *  is invoked upon receiving a keyboard interrupt.
  *
  *  We call inb() before we check if the buffer is full because dropping
  *  keypresses is preferable to blocking additional keypresses.
@@ -152,15 +152,14 @@ void kb_handler()
 {
     int keypress = inb(KEYBOARD_PORT);
     if (!kb_buf_write(&kb_buffer, keypress)) {
-        /* nothing to do if write fails, we can just return */
+        /* nothing to do if write fails, we can just drop the keypress */
     }
     outb(INT_CTL_PORT, INT_ACK_CURRENT);
 }
 
 int handler_install(void (*tickback)(unsigned int))
 {
-    timer_initialize(&timer, tickback);
-    kb_buf_initialize(&kb_buffer);
+    timer_set_tickback(&timer, tickback);
 
     void *base_addr = idt_base();
 

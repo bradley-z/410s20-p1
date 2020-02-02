@@ -24,6 +24,21 @@ typedef struct {
     void (*tickback)(unsigned int);
 } timer_t;
 
+/* global timer struct that keeps track of ticks and callback */
+timer_t timer;
+
+/** @brief sets tickback callback function for a timer
+ *
+ *  Due to design choice for not initializing our timer completely in
+ *  handler_install(), this function provides flexibilty for initializing the
+ *  timer in, for example, game.c, and then having the tickback function be
+ *  supplied later, such as to the handler_install() function
+ *
+ *  @param timer pointer to timer to initialize
+ *  @param tickback pointer to callback function to set
+ *  @return Void.
+ */
+void timer_set_tickback(timer_t *timer, void (*tickback)(unsigned int));
 /** @brief initializes the timer
  *
  *  Sets numTicks to 0, sets callback function, then sends data to the timer io

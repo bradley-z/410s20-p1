@@ -1,8 +1,18 @@
+/** @file sokoban_game.h
+ *  @brief sokoban game interface
+ *
+ *  This file contains types used in the implementation for the sokoban game as
+ *  well as the function definitions for functions called externally from other
+ *  files.
+ *
+ *  @author Bradley Zhou (bradleyz)
+ *  @bug No known bugs.
+ */
 #ifndef __SOKOBAN_GAME_H_
 #define __SOKOBAN_GAME_H_
 
 #include <sokoban.h>
-#include <stdbool.h>
+#include <stdbool.h>    /* bool */
 
 #define NUM_HIGHSCORES 3
 

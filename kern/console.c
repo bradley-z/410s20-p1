@@ -1,6 +1,9 @@
 /** @file console.c
  *  @brief console driver implementation
  *
+ *  Implementation for console driver. Has all logic for displaying text back to
+ *  the console.
+ *
  *  @author Bradley Zhou (bradleyz)
  *  @bug '\b' isn't handled perfectly. If we are typing some text onto a line
  *       and partway through, we press '\n' to move onto the next line, the

@@ -37,6 +37,14 @@ void tick(unsigned int numTicks);
 #include <sokoban.h>
 #include <sokoban_game.h>
 
+#include <timer.h>
+#include <kb_buffer.h>
+
+/* timer defined in timer.h */
+extern timer_t timer;
+/* keyboard buffer defined in kb.c */
+extern kb_buf_t kb_buffer;
+
 /** @brief Kernel entrypoint.
  *  
  *  This is the entrypoint for the kernel.  It simply sets up the
@@ -49,6 +57,9 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     /*
      * Initialize device-driver library.
      */
+    timer_initialize(&timer, NULL);
+    kb_buf_initialize(&kb_buffer);
+
     handler_install(tick);
 
     enable_interrupts();
