@@ -3,11 +3,11 @@
  *
  *  @author Bradley Zhou (bradleyz)
  *  @bug '\b' isn't handled perfectly. If we are typing some text onto a line
- *       partway through, we press '\n' to move onto the next line, the console
- *       doesn't "remember" where the last position was on the previous line,
- *       so if we press backspace immediately after that, the cursor will move
- *       to the last character in the previous line (which is most likely an
- *       empty space) instead of the position right before the '\n'.
+ *       and partway through, we press '\n' to move onto the next line, the
+ *       console doesn't "remember" where the last position was on the previous
+ *       line, so if we press backspace immediately after that, the cursor will
+ *       move to the last character in the previous line (which is most likely
+ *       an empty space) instead of the position right before the '\n'.
  */
 #include <p1kern.h>
 #include <stddef.h>     /* NULL */
