@@ -11,7 +11,7 @@
 #include <stddef.h>             /* NULL */
 #include <stdint.h>             /* uint32_t, uint64_t */
 #include <stdbool.h>            /* bool */
-#include <asm.h>                /* inb, outb */
+#include <asm.h>                /* inb(), outb() */
 #include <timer_defines.h>      /* TIMER_IDT_ENTRY */
 #include <interrupt_defines.h>  /* INT_CTL_PORT, INT_ACK_CURRENT */
 #include <idt.h>                /* IDT_USER_START, IDT_ENTS */
@@ -54,7 +54,8 @@ extern kb_buf_t kb_buffer;
  *
  *  All the information that describes an interrupt gate is passed as
  *  parameters to this function, which then does the appropriate shifting and
- *  masking to put each piece of information in its correct bits.
+ *  masking to put each piece of information in its correct bits. The format is
+ *  described on page 151 of intel-sys.pdf.
  *
  *  @param gate_type type of gate
  *  @param dpl descriptor privilege level
@@ -159,6 +160,16 @@ void kb_handler()
 
 int handler_install(void (*tickback)(unsigned int))
 {
+    /**
+     *  Though there MIGHT be a use case such that the user doesn't actually
+     *  need to do any additional work upon the timer firing, those cases seem
+     *  far and few and the additional safety of disallowing NULL tickback
+     *  functions seems to be a better choice here.
+     */
+    if (tickback == NULL) {
+        return -1;
+    }
+
     timer_set_tickback(&timer, tickback);
 
     void *base_addr = idt_base();

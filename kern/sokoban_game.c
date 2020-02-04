@@ -1,25 +1,40 @@
+/** @file sokoban_game.c
+ *  @brief game implementation
+ *
+ *  This contains all the implementation details for the sokoban game. Detailed
+ *  functionality explanations and design choices are documented in README.dox.
+ *
+ *  @author Bradley Zhou (bradleyz)
+ *  @bug No known bugs.
+ */
 #include <sokoban_game.h>
 #include <p1kern.h>
 #include <sokoban.h>
 #include <stdbool.h>        /* bool */
 #include <stdint.h>         /* UINT32_MAX */
 #include <video_defines.h>  /* console size, color constants */
-#include <stdio.h>          /* printf */
-#include <string.h>         /* memcpy */
+#include <stdio.h>          /* printf() */
+#include <string.h>         /* memcpy() */
 
+/* scoring system is just moves/time, so default score is just the max val */
 #define DEFAULT_SCORE       UINT32_MAX
 
+/* ASCII code for space character */
 #define ASCII_SPACE         0x20
 
+/* I like these symbols better (ones shown in handout) */
 #define MY_SOK_WALL         ((char)0xB0)
 #define MY_SOK_PLAYER       ('@')
 #define MY_SOK_BOX          ('o')
 #define MY_SOK_GOAL         ('x')
+/* Distinguish between boxes on goal and boxes not on goal in game logic */
 #define MY_SOK_BOX_ON_GOAL  ('O')
 
+/* Lakers colors bc rip kobe :'( */
 #define MAIN_COLOR          (FGND_YLLW | BGND_BLACK)
 #define ACCENT_COLOR        (FGND_MAG | BGND_BLACK)
 
+/* Colors to draw the level elements and also text */
 #define DEFAULT_COLOR       (FGND_WHITE | BGND_BLACK)
 #define WALL_COLOR          (FGND_DGRAY | BGND_BLACK)
 #define PLAYER_COLOR        (FGND_BCYAN | BGND_BLACK)
@@ -27,6 +42,7 @@
 #define GOAL_COLOR          (FGND_YLLW | BGND_BLACK)
 #define BOX_ON_GOAL_COLOR   (FGND_GREEN | BGND_BLACK)
 
+/* (rounded) Percentages for my align functions */
 #define ALIGNMENT_TWENTYTH  5
 #define ALIGNMENT_TWELFTH   8
 #define ALIGNMENT_TENTH     10
@@ -39,11 +55,13 @@
 #define ALIGNMENT_HALF      50
 #define MAX_PERCENT         100
 
+/* Rows to print level, num moves, and time at; independent of screen size */
 #define LEVEL_INFO_ROW      1
 #define MOVES_INFO_ROW      3
 #define TIME_INFO_ROW       4
 #define SIDE_INFO_COL       4
 
+/* Constants to define the sizes of my beautiful ASCII art images */
 #define ASCII_SOKO_HEIGHT   6
 #define ASCII_SOKO_WIDTH    43
 #define ASCII_LBOX_HEIGHT   7
@@ -51,11 +69,21 @@
 #define ASCII_RBOX_HEIGHT   7
 #define ASCII_RBOX_WIDTH    12
 
+/* Strings can be considered images of width strlen() and height 1 */
 #define STRING_HEIGHT       1
+/* Spacing between drawn elements on the screen */
 #define ELEMENT_ROW_SPACING 1
 
+/**
+ *  This constant be kinda jank; Certain alignment features require centering by
+ *  string length, but the way I print time doesn't actually include all the
+ *  characters that should be printed, since those are printed with the
+ *  print_current_game_time() function. This is just an offset that accounts
+ *  for those extra characters to achieve proper alignment.
+ */
 #define FORMAT_STR_OFFSET   3
 
+/* Size of the console screen in bytes */
 #define CONSOLE_SIZE        (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH)
 
 static inline int align_row(alignment_t alignment, int height, int percentage);

@@ -16,8 +16,8 @@
 #include <stddef.h>     /* NULL */
 #include <stdbool.h>    /* bool */
 #include <stdint.h>     /* uint8_t, uint16_t */
-#include <string.h>     /* memmove */
-#include <asm.h>        /* outb */
+#include <string.h>     /* memmove() */
+#include <asm.h>        /* outb() */
 
 /* ASCII code for space character */
 #define ASCII_SPACE 0x20
