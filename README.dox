@@ -28,6 +28,16 @@ move, the number of moves is redrawn to be updated. Additionally, every 10
 timer interrupts while the game is running will cause the time to also be
 redrawn and updated (0.1 seconds).
 
+Checking whether or not we're on a goal: One problem is that once we walk onto
+a square and draw our player symbol over that square, at that point we have no
+idea if the square we're on was previously an empty space or a goal, since both
+of those are squares we could walk onto. One approach was to simply keep a set
+of the positions of all the goals and just do a check every time we move, but
+this method is quite inefficient. The solution I found was to keep a boolean
+variable in our game_t that represents if we are currently on a goal or not.
+This allows us to check efficiently and make the appropriate updates upon moving
+off.
+
 Game:
 General organization: We have two main global variables: one that keeps track of
 the overall running of sokoban (keep track of highscores and sokoban state) and
@@ -44,6 +54,15 @@ pressing 'i' will return us to our game, we can press 'q', which will just
 return us back to the introduction screen, or we can press 'r' which resets the
 level without any other state change. After we complete a level, we go into a
 state such that any key will allow us to continue to the next level.
+
+Movement: The main idea of the try_move() function is if a move is invalid, e.g.
+hitting a wall, trying to move two stacked boxes, movement off the console, then
+it will just return without making any changes to the console or the state of
+the game. The game_t struct actually keeps track of information from both the
+game as whole (all levels) and also just the currently running level. Some
+important level specific details include our current position, how many boxes we
+have left, and whether or not we're currently standing on a goal. All this
+information is reflected once we make a valid move.
 
 Pausing: For pause and instructions, one decision I made was to save all the
 console data before displaying the pause/instructions screen. This is used in
