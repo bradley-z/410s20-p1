@@ -86,32 +86,272 @@
 /* Size of the console screen in bytes */
 #define CONSOLE_SIZE        (2 * CONSOLE_HEIGHT * CONSOLE_WIDTH)
 
+/** @brief used to align an image vertically
+ *
+ *  This alignment function isn't the most intuitive. Here is an example of its
+ *  usage: we want to draw an image that's 8 rows tall. If we want to align the
+ *  center of the image with the center of the console, alignment would be
+ *  CENTER and percentage would be 50. If we want to align the top side of the
+ *  image with a quarter of the way down the console, alignment would be
+ *  TOP_SIDE and percentage would be 25. The last possible alignment for this
+ *  function is BOTTOM_SIDE. In this case, the alignment percentage is offset
+ *  from the BOTTOM of the console. Therefore, parameters BOTTOM_SIDE, 8, 25
+ *  would align the bottom of the image with a quarter of the way UP the console
+ *  and then return the row to start drawing the top of the image from. If the
+ *  alignment is not one of these, or the image would be out of range, a
+ *  negative number is returned. Otherwise, the number returned is the row that
+ *  one should start drawing at to get the desired alignment.
+ *
+ *  @param alignment from what part of the image we are aligning
+ *  @param height how many rows does the image take up
+ *  @param percentage how far vertically we want to align the image to
+ *  @return row to start drawing the image at
+ */
 static inline int align_row(alignment_t alignment, int height, int percentage);
+/** @brief used to align an image horizontally
+ *
+ *  Analogous to the previous function. Possible alignments for this function
+ *  are LEFT_SIDE, CENTER, and RIGHT_SIDE. LEFT_SIDE and RIGHT_SIDE behave
+ *  similarly to TOP_SIDE and BOTTOM_SIDE, respectively.
+ *
+ *  @param alignment from what part of the image we are aligning
+ *  @param width how many columns does the image take up
+ *  @param percentage how far horizontally we want to align the image to
+ *  @return column to start drawing the image at
+ */
 static inline int align_col(alignment_t alignment, int width, int percentage);
 
+/** @brief draws an image (represented by a string) at a given row/column
+ *
+ *  This function doesn't need to clear the console because its purpose is to
+ *  draw an image in addition to what's already on the screen.
+ *
+ *  To be honest, this is mostly just used for my beautiful ASCII art.
+ *
+ *  @param image image to draw (represented by a string of len (height * width))
+ *  @param start_row row to start drawing at
+ *  @param start_col col to start drawing at
+ *  @param height how many rows the image takes up
+ *  @param width how many columns the image takes up
+ *  @param color what color to print the image
+ *  @return Void.
+ */
 static void draw_image(const char *image, int start_row, int start_col,
                        int height, int width, int color);
+/** @brief draws the specified level and checks if it's valid
+ *
+ *  Centers the map of the level and iterates through the string, printing
+ *  symbols accordingly. While iterating through, we also check to make sure the
+ *  map is valid, return true if it is and false otherwise. We also draw the
+ *  level number/num moves/time information.
+ *
+ *  Things that are invalid:
+ *  Any NULL parameters
+ *  Zero boxes found
+ *  No player character found
+ *  Multiple player characters found
+ *
+ *  @param level level to draw
+ *  @param total_boxes pointer to int to store total number of boxes at
+ *  @param start_row pointer to int to store the player's start row at
+ *  @param start_col pointer to int to store the player's start column at
+ *  @return whether or not the level is valid
+ */
 static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
                                int *start_row, int *start_col);
+/** @brief prints the current time at specified location
+ *
+ *  I wanted to print time in 0.1 second intervals. Since we have a tick every
+ *  10 ms, there are 10 ticks in ever 0.1 second interval. snprintf() is used to
+ *  print the number of ticks / 10 into a buffer and the return value of
+ *  snprintf() is used to add a '.' before the last number to emulate having
+ *  0.1 second floating point precision.
+ *
+ *  @param ticks number of ticks to print time representation of
+ *  @param row row to print time at
+ *  @param col column to print time at
+ *  @return Void.
+ */
 static void put_time_at_loc(int ticks, int row, int col);
+/** @brief prints the number of moves in current level
+ *
+ *  Prints the current number of moves in the level at the fixed moves location
+ *  at the top left of the screen. Called after we make a move and as we
+ *  start/restart a level.
+ *
+ *  @return Void.
+ */
 static void print_current_game_moves(void);
+/** @brief prints time elapsed in current level
+ *
+ *  Prints the amount of time that has elapsed while the current level running
+ *  has not been paused. Called as we start/restart a level as well as during
+ *  the tickback function.
+ *
+ *  @return Void.
+ */
 static void print_current_game_time(void);
+/** @brief prints a string at a given row/col with a given color
+ *
+ *  One pass method to printing a string that we don't know the length of as
+ *  well as in a different color from the console wide one. Not super necessary
+ *  since printing unknown strings is potentially unsafe and printing known
+ *  const char* strings, we can just use putbytes() since strlen() optimizes
+ *  down to a constant. However, it wraps up the logic to printing at a specific
+ *  position/color nicely.
+ *
+ *  @param str string to print
+ *  @param row row to start printing at
+ *  @param col column to start printing at
+ *  @param color color to print the string
+ *  @return Void.
+ */
 static void putstring(const char *str, int row, int col, int color);
 
+/** @brief checks to see if the next square in the given direction is in range
+ *
+ *  Used to modularize moving in any direction while simultaneously checking
+ *  if it's in range of the console.
+ *
+ *  @param dir direction to look in
+ *  @param row row we're currently at
+ *  @param col column we're currently at
+ *  @param new_row pointer to int we'll store the next square's row at
+ *  @param new_col pointer to int we'll store the next square's column at
+ *  @return whether or not the next square in the given direction is in range.
+ */
 static bool valid_next_square(dir_t dir, int row, int col,
                               int *new_row, int *new_col);
+/** @brief attempts to move in the given direction
+ *
+ *  This function contains most of the actual game logic (which really only
+ *  consists of movement logic). Logic breakdown:
+ *  
+ *  Check the validity and symbol of the next square in the given direction.
+ *  If it is a space or a goal, we can move onto it, drawing our player symbol
+ *  at the new square. As we leave, we check to see if were on a goal before,
+ *  drawing the appropriate symbols. Additionally, we update our "on_goal"
+ *  status accordingly if we moved off of or onto a goal. Finally, we update the
+ *  amount of moves and our position.
+ *
+ *  If it is a box or a box on a goal, we can push it, but we have to check the
+ *  square after it first. If the square after the box is a space or a goal, we
+ *  can push the box. Again, as we leave, we check to see if we were on a goal
+ *  before, drawing the appropriate symbols. Additionally, we need to update
+ *  statuses based on whether the box we are pushing was previously on a goal or
+ *  not. Finally, we need to update based on whether the square we're pushing
+ *  the box onto is a space or a goal. We update "boxes_left" based on this
+ *  information as well as the "on_goal" and the moves and position.
+ *
+ *  Finally, we check the number of boxes we have left and if it's 0, we call
+ *  the complete_level() function.
+ *
+ *  All of these squares are checked to see if they are in range. Additionally,
+ *  in the case that a particular move cannot be made or a box cannot be pushed,
+ *  the the function simply returns without moving anything.
+ *
+ *  @param dir direction we're trying to move in
+ *  @return Void.
+ */
 static void try_move(dir_t dir);
+/** @brief checks input character and handles it accordingly
+ *
+ *  There is a different set of valid keypresses depending on the state of the
+ *  game. For the most part, this function just falls into case statements to
+ *  call an appropriate function, but certain keys (pause/instructions) will
+ *  also save the state of the current screen before transitioning. When the
+ *  appropriate keypress is made to leave the pause/instructions, the old screen
+ *  is restored.
+ *
+ *  @param ch input keypress
+ *  @return Void.
+ */
 static void handle_input(char ch);
+/** @brief shows the next screen after we complete a level
+ *
+ *  Called after we press any key in a level summary. If we just completed our
+ *  final level, we go back to introduction screen. Otherwise, we increment the
+ *  level of our game and start the new level.
+ *
+ *  @return Void.
+ */
 static void level_up(void);
+/** @brief prints the level summary screen and waits for any key press
+ *
+ *  Displays end level message, moves, time, and changes game state so
+ *  handle_input() knows to expect any key. If we've completed the last level,
+ *  update the highscores accordingly as well.
+ *
+ *  @return Void.
+ */
 static void complete_level(void);
+/** @brief quits the actively running game
+ *
+ *  Can only be called if the current level is running. This just returns to
+ *  introduction screen.
+ *
+ *  @return Void.
+ */
 static void quit_game(void);
+/** @brief pauses the actively running game
+ *
+ *  Can only be called if the current level is running. Changes game state,
+ *  clears console, and displays the paused message.
+ *
+ *  @return Void.
+ */
 static void pause_game(void);
+/** @brief restarts the actively running game
+ *
+ *  Can only be called if the current level is running (and also while
+ *  initializing a level for the first time). Resets the level_moves to 0 and
+ *  draws the current game level. We set the game state to PAUSED so the timer
+ *  interrupt handler doesn't increase the tick count before we're ready. If the
+ *  map is invalid, just return to introduction screen.
+ *
+ *  We don't want to reset the level_ticks to 0 because we still want to keep
+ *  track of the total time the player has spent on the level.
+ *
+ *  @return Void.
+ */
 static void restart_current_level(void);
+/** @brief starts a sokoban level
+ *
+ *  Sets game states and level data. We also initialize level_ticks to 0 here
+ *  because we want it to increment regardless of how many times the level has
+ *  been reset; otherwise, the user could just reset the level to reset their
+ *  time.
+ *
+ *  @param level_number level number to start (not zero indexed)
+ *  @return Void.
+ */
 static void start_sokoban_level(int level_number);
+/** @brief starts a sokoban game
+ *
+ *  For clarification for my terminology, a sokoban game consists of playing
+ *  through all of the sokoban levels. This function resets the total_ticks and
+ *  total_moves to 0 and starts the first level.
+ *
+ *  @return Void.
+ */
 static void start_game(void);
+/** @brief displays instructions screen
+ *
+ *  Loops through instructions string array and displays them one by one.
+ *
+ *  @return Void.
+ */
 static void display_instructions(void);
+/** @brief displays introduction screen
+ *
+ *  Changes state then does a lot of weird alignment to draw my beautiful ASCII
+ *  arts as well as the highscores. Don't print default highscores.
+ *
+ *  @return Void.
+ */
 static void display_introduction(void);
 
+/* ASCII art used in my introduction screen */
 const char *ascii_sokoban = "\
    _____       _         _                 \
   / ____|     | |       | |                \
@@ -136,6 +376,7 @@ const char *ascii_right_box = "\
  `. |   `. |\
    `+------+";
 
+/* constant strings that are utilized in the various game screens */
 const char *name = "Bradley Zhou (bradleyz)";
 const char *intro_screen_message =
                             "Press 'i' for instructions or 'enter' to start";
@@ -166,10 +407,14 @@ const char *instructions[] = {
     0,
 };
 
+/* state of the screen before we pause/instructions for easy recovery */
 char saved_screen[CONSOLE_SIZE];
+/* intermediate buffer to create our 0.1 second precision timing */
 char timer_print_buf[CONSOLE_WIDTH];
 
+/* state of the currently running sokoban game; not looked at if not running */
 game_t current_game;
+/* metadata of sokoban game */
 sokoban_t sokoban;
 
 static inline int align_row(alignment_t alignment, int height, int percentage)
@@ -252,7 +497,8 @@ static void draw_image(const char *image, int start_row, int start_col,
 static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
                                int *start_row, int *start_col)
 {
-    if (total_boxes == NULL || start_row == NULL || start_col == NULL) {
+    if (level == NULL || total_boxes == NULL ||
+        start_row == NULL || start_col == NULL) {
         return false;
     }
 
@@ -262,8 +508,8 @@ static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
     printf("Level: %d", current_game.level_number);
 
     int curr_row = align_row(CENTER, level->height, ALIGNMENT_HALF);
-    int curr_col = align_col(CENTER, level->width, ALIGNMENT_HALF);
-    int first_col = curr_col;
+    int first_col = align_col(CENTER, level->width, ALIGNMENT_HALF);
+    int curr_col = first_col;
     int end_col = curr_col + level->width - 1;
 
     int total_pixels = level->height * level->width;
@@ -282,6 +528,10 @@ static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
                 ch = MY_SOK_WALL;
                 break;
             case (SOK_PUSH):
+                /* multiple starting positions */
+                if (found_start == true) {
+                    return false;
+                }
                 *start_row = curr_row;
                 *start_col = curr_col;
                 color = PLAYER_COLOR;
@@ -298,6 +548,7 @@ static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
                 ch = MY_SOK_GOAL;
                 break;
             default:
+                /* space character */
                 if (curr_col == end_col) {
                     curr_col = first_col;
                     curr_row++;
@@ -310,6 +561,7 @@ static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
 
         draw_char(curr_row, curr_col, ch, color);
         if (curr_col == end_col) {
+            /* wrap back around */
             curr_col = first_col;
             curr_row++;
         }
@@ -317,12 +569,15 @@ static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
             curr_col++;
         }
     }
-    *total_boxes = num_boxes;
 
+    /* if there are no boxes or no starting position, board is invalid */
     if (num_boxes == 0 || !found_start) {
         return false;
     }
 
+    *total_boxes = num_boxes;
+
+    /* print game information */
     int message_row = align_row(BOTTOM_SIDE, STRING_HEIGHT, ALIGNMENT_SIXTH);
     int message_col = align_col(CENTER,
                                 strlen(game_screen_message), ALIGNMENT_HALF);
@@ -337,10 +592,12 @@ static bool draw_sokoban_level(sokolevel_t *level, int *total_boxes,
 
 static void put_time_at_loc(int ticks, int row, int col)
 {
+    /* uses return value of snprintf to know where to draw decimal point */
     int len = snprintf(timer_print_buf, CONSOLE_WIDTH, "%d", ticks / 10);
     timer_print_buf[len + 1] = '\0';
     timer_print_buf[len] = timer_print_buf[len - 1];
     timer_print_buf[len - 1] = '.';
+    /* display string once it has been formed */
     putstring(timer_print_buf, row, col, DEFAULT_COLOR);
 }
 
@@ -353,6 +610,7 @@ static void print_current_game_moves()
 static void print_current_game_time()
 {
     put_time_at_loc(current_game.level_ticks,
+                    /* SIDE_INFO_COL is where the string "Time: " starts */
                     TIME_INFO_ROW, SIDE_INFO_COL + strlen("Time: "));
 }
 
@@ -441,6 +699,7 @@ static void try_move(dir_t dir)
             if (next_square == ASCII_SPACE) {
                 current_game.on_goal = false;
             }
+            /* if we were on a goal and move onto a goal, on_goal still true */
         }
         else {
             draw_char(row, col, ASCII_SPACE, PLAYER_COLOR);
@@ -455,6 +714,7 @@ static void try_move(dir_t dir)
         current_game.curr_col = new_col;
     }
     else if (pushable) {
+        /* square after the box */
         int next_next_square_row, next_next_square_col;
         if (!valid_next_square(dir, new_row, new_col,
                                &next_next_square_row, &next_next_square_col)) {
@@ -622,6 +882,7 @@ static void complete_level()
     int moves = current_game.level_moves;
     unsigned int ticks = current_game.level_ticks;
 
+    /* love me my alignment */
     int forty_percent = 4 * ALIGNMENT_TENTH;
 
     putstring(msg,
@@ -629,6 +890,7 @@ static void complete_level()
               align_col(CENTER, strlen(msg), ALIGNMENT_HALF),
               MAIN_COLOR);
 
+    /* save highscores and change string to display total moves/ticks */
     if (current_game.level_number == soko_nlevels) {
         score_t score = { current_game.total_moves, current_game.total_ticks };
 
@@ -652,6 +914,7 @@ static void complete_level()
         ticks = current_game.total_ticks;
     }
 
+    /* display message and moves/time information */
     putstring(end_level_msg,
               align_row(BOTTOM_SIDE, STRING_HEIGHT, ALIGNMENT_QUARTER),
               align_col(CENTER, strlen(end_level_msg), ALIGNMENT_HALF),
@@ -705,6 +968,7 @@ static void restart_current_level()
 
 static void start_sokoban_level(int level_number)
 {
+    current_game.game_state = PAUSED;
     sokoban.state = GAME_RUNNING;
 
     current_game.level_ticks = 0;
@@ -741,6 +1005,7 @@ static void display_instructions()
     int row = align_row(TOP_SIDE, STRING_HEIGHT, ALIGNMENT_QUARTER);
     int col = align_col(LEFT_SIDE, strlen(ins_str), ALIGNMENT_TWENTYTH);
     int i = 0;
+    /* display each instruction on its own line */
     while (instructions[i] != NULL) {
         putstring(instructions[i], row, col, DEFAULT_COLOR);
         i++;
@@ -805,6 +1070,7 @@ static void display_introduction()
     for (i = 0; i < NUM_HIGHSCORES; i++) {
         set_cursor(curr_draw_row, curr_draw_col);
         printf(moves_fmt, i + 1);
+        /* only print moves/time if it's not default */
         if (sokoban.highscores[i].num_moves != DEFAULT_SCORE) {
             printf("%u", sokoban.highscores[i].num_moves);
         }
@@ -823,6 +1089,7 @@ void sokoban_initialize_and_run()
     score_t default_highscore = { DEFAULT_SCORE, DEFAULT_SCORE };
 
     int i;
+    /* initialize default highscores */
     for (i = 0; i < NUM_HIGHSCORES; i++) {
         sokoban.highscores[i] = default_highscore;
     }
@@ -831,6 +1098,7 @@ void sokoban_initialize_and_run()
 
     display_introduction();
 
+    /* poll for and handle inputs as we receive them */
     int ch;
     while (1) {
         do {
