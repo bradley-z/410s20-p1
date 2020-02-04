@@ -4,4 +4,95 @@
 
 @author Bradley Zhou (bradleyz)
 
+Design decisions:
+readchar() buffer/kb driver: I decided to use a circular buffer to implement
+this functionality. The main reason I chose to use this was because I needed to
+have some queue-like functionality, but I did not want the queue to grow
+indefinitely if scancodes weren't being processed; dropping keypresses seemed
+preferable. Circular buffers are also thread safe in a single-producer,
+single-consumer situation, which is exactly what we have in this project.
+
+Console scrolling: memmove() was used because the only change needed to be done
+was to take the data in the console and just move it some fixed offset, and
+memmove() seemed to be the most effecient way to do that.
+
+Drawing/updating the game screen: When a level is started/restarted, the entire
+console is cleared and then redrawn. This includes the actual level map,
+message with instructions, and level/moves/time information. Upon making a move,
+the only squares that are redrawn are where the player was previously, and the
+square the player just moved to (and the square after in the case of pushing a
+box). I use get_char() to check the potential squares and cased on what they
+were. We also have certain information on the side about each level, namely its
+number, the number of moves, and the time it's taking. After making a valid
+move, the number of moves is redrawn to be updated. Additionally, every 10
+timer interrupts while the game is running will cause the time to also be
+redrawn and updated (0.1 seconds).
+
+Game:
+General organization: We have two main global variables: one that keeps track of
+the overall running of sokoban (keep track of highscores and sokoban state) and
+one that only keeps track of a currently running game instance. This acts as
+sort of a finite state machine that might change depending on our inputs, which
+is exactly what handle_input() does. For instance, starting out in the
+introduction screen, we can either press 'i' or 'enter'. Pressing 'i' will bring
+us to the instructions screen, where we can press 'i' to return to the
+introduction screen. Pressing 'enter' will start running a game of sokoban,
+incrementing through each of the levels. While running our game, we can press
+'p', which brings us to a pause screen where we can press 'p' to return, we can
+press 'i', which brings us to the same instructions screen as before where
+pressing 'i' will return us to our game, we can press 'q', which will just
+return us back to the introduction screen, or we can press 'r' which resets the
+level without any other state change. After we complete a level, we go into a
+state such that any key will allow us to continue to the next level.
+
+Pausing: For pause and instructions, one decision I made was to save all the
+console data before displaying the pause/instructions screen. This is used in
+conjunction with the previous_state variable so the program knows what state
+called the pause/instructions. The saving of the console screen makes restoring
+the previous state more efficient because nothing has to be recalculated, only
+copied. Being in the instructions screen is also equivalent to being paused
+from the perspective of the timer; it will not increase while we're reading the
+instructions.
+
+Scoring: To me, the scoring that made sense was minimizing moves first, and then
+having time spent as a tiebreaker. In my mind, being able to methodically think
+out a more solution requiring fewer moves warranted a better score than just
+potentially randomly trying moves to try and solve it the fastest. Additionally,
+upon restarting a level, the moves count is reset but the time count is not.
+
+Timing: Given the finickiness of the simics timer, I thought it'd be helpful to
+display times to the 0.1 second. Given that float were not supported, this was
+non-trivial. My timers always kept track of the total number of ticks, which
+occur every 10ms. Therefore, 10 ticks equated to 0.1 second. To print the time,
+I would divide the number of ticks by 10 to get the number of 0.1 second
+"ticks." I then would snprintf into a buffer, move the last digit over one, and
+then write a decimal point where the last digit used to be. This is analogous to
+just writing a decimal point before the last digit of a number, effectively
+dividing it by 10 again giving us the number of seconds with 0.1 second
+precision.
+
+Alignment of UI elements: Most of the code actually had to deal with displaying
+text or images. Hard coding constants would have been a bad approach because
+that would have been relying on us having a 25x80 console screen forever. I
+instead created alignment functions with different options so anything could be
+easily aligned to any way you could imagine. align_row() and align_col() are
+used together to figure out the starting location to draw such elements. The
+specific usage of these is documented in sokoban_game.c.
+
+Bugs: All known bugs are minor and are documented in their appropriate files.
+
+Stability: From my testing, the game seems to be stable with every state and
+every possible input. Sometimes, the game would freeze for a moment and the
+keys I pressed while it was frozen would be all processed and then the new,
+updated screen would be displayed, but to me it seemed to be more due to simics
+than anything else.
+
+Possible improvements:
+File organization: More time could be spent on refactoring the sokoban_game.c
+file given that there are many static functions in there that could have been
+put somewhere else. The process from refactoring my original, poorly organized,
+and magic number filled code into those helper functions also presented an
+opportunity to separate those concerns out into other files, which would have
+been next to do given more time.
+
 */
